@@ -8,6 +8,8 @@
 
   const CLEAR = 'data-chatscape-clear';
   const GLASS = 'data-chatscape-glass';
+  const SOLID = 'data-chatscape-solid';
+  const DIALOG = '[role="dialog"], [role="alertdialog"], dialog, [aria-modal="true"]';
   const MIN_GLASS_AREA = 1600;
   const CLEAR_RATIO = 0.3;
 
@@ -59,6 +61,7 @@
       for (const el of document.querySelectorAll(`[${CLEAR}], [${GLASS}]`)) {
         el.removeAttribute(CLEAR);
         el.removeAttribute(GLASS);
+        el.removeAttribute(SOLID);
         el.style.removeProperty('--chatscape-rgb');
       }
     }
@@ -85,6 +88,17 @@
         if (!color || color.a < 0.5) continue;
         const rect = el.getBoundingClientRect();
         const area = rect.width * rect.height;
+        const dialog = el.closest(DIALOG);
+        // A modal's own surface stays a near-solid panel however large it is,
+        // so the page behind it does not show through and mix with its text.
+        if (dialog && !el.parentElement?.closest(`[${GLASS}]`) && area >= MIN_GLASS_AREA) {
+          el.style.setProperty('--chatscape-rgb', `${color.r}, ${color.g}, ${color.b}`);
+          el.setAttribute(GLASS, '');
+          el.setAttribute(SOLID, '');
+          continue;
+        }
+        // A large see-through layer is a backdrop dimming the page under a modal: keep it.
+        if (area >= viewport * CLEAR_RATIO && color.a < 0.95) continue;
         if (area >= viewport * CLEAR_RATIO) {
           // The first large surface tells us the page's own background, used
           // for the veil that keeps text readable over the wallpaper.
