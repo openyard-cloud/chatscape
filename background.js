@@ -1,6 +1,7 @@
 // Opens the in-page picker from the toolbar button or the keyboard command.
+const SITES = ['https://claude.ai/', 'https://chatgpt.com/'];
 const toggle = (tab) => {
-  if (tab?.id && tab.url?.startsWith('https://claude.ai/')) {
+  if (tab?.id && SITES.some((site) => tab.url?.startsWith(site))) {
     chrome.tabs.sendMessage(tab.id, { type: 'toggle-picker' }).catch(() => {});
   }
 };

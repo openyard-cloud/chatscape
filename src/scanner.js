@@ -1,7 +1,7 @@
 // Finds the page's opaque backgrounds and lets the wallpaper show through:
 // large ones become transparent, smaller panels (sidebar, composer, menus)
 // become frosted glass. It reads computed styles, not class names, so it
-// keeps working when claude.ai changes its markup. It never reads text.
+// keeps working when claude.ai or ChatGPT change their markup. It never reads text.
 (() => {
   'use strict';
   const CS = (globalThis.Chatscape = globalThis.Chatscape || {});
@@ -80,7 +80,8 @@
       const all = [root, ...root.getElementsByTagName('*')];
       for (const el of all) {
         if (this.skip(el) || el.hasAttribute(CLEAR) || el.hasAttribute(GLASS)) continue;
-        const color = parseColor(getComputedStyle(el).backgroundColor);
+        const style = getComputedStyle(el);
+        const color = parseColor(style.backgroundColor);
         if (!color || color.a < 0.5) continue;
         const rect = el.getBoundingClientRect();
         const area = rect.width * rect.height;
@@ -88,6 +89,10 @@
           // The first large surface tells us the page's own background, used
           // for the veil that keeps text readable over the wallpaper.
           if (!this.pageColor) this.pageColor = color;
+          el.setAttribute(CLEAR, '');
+        } else if (style.pointerEvents === 'none' || el.parentElement?.closest(`[${GLASS}]`)) {
+          // Decorative overlays (fades, scrims) and panels inside a frosted panel
+          // would stack into a dark block, so they go clear instead.
           el.setAttribute(CLEAR, '');
         } else if (area >= MIN_GLASS_AREA) {
           el.style.setProperty('--chatscape-rgb', `${color.r}, ${color.g}, ${color.b}`);
