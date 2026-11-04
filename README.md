@@ -2,11 +2,15 @@
 
 Live ASCII and pixel wallpapers behind your [claude.ai](https://claude.ai) chat. 20 animated scenes, picked in two clicks, no account, nothing leaves your browser.
 
+[Website and live demo](https://chatscape.openyard.cloud) · [Privacy policy](https://chatscape.openyard.cloud/privacy) · Part of [OpenYard](https://openyard.cloud)
+
+![Chatscape behind a chat, with the picker open](store/screenshots/3-picker.png)
+
 Chatscape is an independent open-source project. It is not affiliated with or endorsed by Anthropic.
 
 ## Install (developer mode, until the store listing is live)
 
-1. Download or clone this repository.
+1. Download [chatscape.zip](https://chatscape.openyard.cloud/download/chatscape.zip) from [chatscape.openyard.cloud](https://chatscape.openyard.cloud) and unzip it, or clone this repository.
 2. Open `chrome://extensions` (Edge: `edge://extensions`, Brave: `brave://extensions`) and turn on **Developer mode**.
 3. Click **Load unpacked** and pick the `chatscape` folder.
 4. Open or reload claude.ai. The default scene, Cloud Drift, appears behind the chat.
@@ -68,7 +72,12 @@ src/picker.js   in-page picker (shadow DOM)
 src/main.js     settings, animation loop, shortcuts
 src/page.css    page rules, all scoped to html[data-chatscape]
 background.js   toolbar button and keyboard command
+site/           chatscape.openyard.cloud (uses src/engine.js for its live background)
+store/          Chrome Web Store listing text and artwork
+scripts/build.sh  builds dist/chatscape-<version>.zip and the site
 ```
+
+To release: bump `version` in `manifest.json`, run `npm run deploy` (builds the zip and publishes the site), then upload `dist/chatscape-<version>.zip` in the Chrome Web Store dashboard using `store/listing.md`.
 
 The canvas sits behind the page at `z-index: -1`. The scanner finds opaque backgrounds by computed style instead of class names, so it survives most claude.ai redesigns. Rendering runs at up to 30 frames per second, pauses when the tab is hidden, and draws a single still frame when the system asks for reduced motion.
 
@@ -78,7 +87,7 @@ Inspired by [Pixel Chat Themes](https://github.com/Aqua2409z/pixel-chat-themes) 
 
 ## Tiếng Việt
 
-Chatscape đặt hình nền động vẽ bằng ký tự phía sau khung chat claude.ai. Có 20 cảnh, không cần tài khoản, không gửi dữ liệu đi đâu. Cài đặt: mở `chrome://extensions`, bật **Developer mode**, bấm **Load unpacked** và chọn thư mục `chatscape`. Đổi cảnh bằng nút trên thanh công cụ, phím **Alt+Shift+T**, hoặc gõ `/theme` rồi Enter trong ô chat.
+Chatscape đặt hình nền động vẽ bằng ký tự phía sau khung chat claude.ai. Có 20 cảnh, không cần tài khoản, không gửi dữ liệu đi đâu. Tải [chatscape.zip](https://chatscape.openyard.cloud/download/chatscape.zip) rồi giải nén. Cài đặt: mở `chrome://extensions`, bật **Developer mode**, bấm **Load unpacked** và chọn thư mục `chatscape`. Đổi cảnh bằng nút trên thanh công cụ, phím **Alt+Shift+T**, hoặc gõ `/theme` rồi Enter trong ô chat.
 
 ## License
 

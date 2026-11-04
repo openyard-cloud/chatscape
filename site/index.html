@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chatscape</title>
+<meta name="description" content="Live ASCII and pixel wallpapers behind your claude.ai chat. 20 animated scenes, no account, nothing leaves your browser.">
+<meta property="og:title" content="Chatscape: your AI chat, with a view">
+<meta property="og:description" content="20 live ASCII and pixel wallpapers behind claude.ai. Free and open source.">
+<meta property="og:url" content="https://chatscape.openyard.cloud">
+<meta property="og:image" content="https://chatscape.openyard.cloud/og.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/icons/icon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#fff;--muted:rgba(255,255,255,.72);--glass:rgba(16,18,28,.55);--line:rgba(255,255,255,.16);--chip:rgba(255,255,255,.1);--ease:cubic-bezier(.16,1,.3,1)}
+body.light{--ink:#16161a;--muted:rgba(22,22,26,.68);--glass:rgba(255,255,255,.62);--line:rgba(22,22,26,.14);--chip:rgba(22,22,26,.07)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);font:16px/1.6 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#0b1020;transition:color .6s var(--ease)}
+a{color:inherit;text-decoration:none}
+#bg{position:fixed;inset:0;width:100vw;height:100vh;z-index:-1;display:block}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.glass{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);transition:background .6s var(--ease),border-color .6s}
+
+nav{position:sticky;top:0;z-index:10;padding:14px 0}
+nav .wrap{display:flex;align-items:center;gap:20px}
+nav .bar{display:flex;align-items:center;gap:18px;width:100%;padding:8px 8px 8px 14px;border-radius:999px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px}
+.brand img{width:26px;height:26px;border-radius:7px;image-rendering:pixelated}
+.links{display:flex;gap:18px;font-size:14px;color:var(--muted);margin-left:auto}
+.links a:hover{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 18px;border-radius:999px;font-weight:600;font-size:15px;transition:transform .4s var(--ease),opacity .2s;white-space:nowrap}
+.btn:hover{transform:translateY(-2px)}
+.btn.pri{background:var(--ink);color:#0b1020}
+body.light .btn.pri{color:#fff}
+.btn.sec{border:1px solid var(--line);background:var(--chip)}
+.btn.sm{height:36px;padding:0 14px;font-size:14px}
+.btn svg{width:18px;height:18px}
+@media (max-width:760px){.links{display:none}}
+
+.hero{display:grid;grid-template-columns:1fr 1.1fr;gap:40px;align-items:center;min-height:calc(100vh - 80px);padding:20px 0 60px}
+@media (max-width:900px){.hero{grid-template-columns:1fr;min-height:0}}
+.kick{display:inline-flex;align-items:center;gap:8px;font:20px/1 VT323,monospace;letter-spacing:.04em;padding:6px 12px;border-radius:999px}
+h1{font-size:clamp(42px,6vw,76px);line-height:1.02;letter-spacing:-.035em;margin:18px 0 18px;font-weight:700;text-shadow:0 2px 30px rgba(0,0,0,.25)}
+body.light h1{text-shadow:none}
+h1 em{font-style:normal;font-family:VT323,monospace;font-size:1.18em;letter-spacing:0}
+.lead{font-size:clamp(17px,1.5vw,20px);color:var(--muted);max-width:30em;margin:0 0 28px}
+.cta{display:flex;gap:10px;flex-wrap:wrap}
+.note{margin-top:14px;font-size:13px;color:var(--muted)}
+
+/* mock claude.ai window */
+.mock{border-radius:20px;overflow:hidden;display:grid;grid-template-columns:150px 1fr;height:440px;box-shadow:0 40px 80px -30px rgba(0,0,0,.6)}
+.mock .side{padding:16px 14px;border-right:1px solid var(--line);font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:10px}
+.mock .side b{color:var(--ink);font-size:14px;margin-bottom:6px}
+.mock .side span{padding:6px 8px;border-radius:8px}
+.mock .side span.on{background:var(--chip);color:var(--ink)}
+.mock .main{display:flex;flex-direction:column;padding:18px 18px 14px;gap:12px;min-width:0}
+.mock .m{max-width:84%;font-size:14px;line-height:1.5;padding:10px 14px;border-radius:16px}
+.mock .u{align-self:flex-end;background:var(--chip);border:1px solid var(--line)}
+.mock .a{align-self:flex-start}
+.mock .comp{margin-top:auto;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:10px;font-size:14px;border:1px solid var(--line);background:var(--glass)}
+.mock .comp .txt{flex:1;font-family:ui-monospace,Menlo,monospace}
+.mock .comp .cur{display:inline-block;width:2px;height:1em;background:var(--ink);vertical-align:-2px;animation:bl 1s steps(1) infinite}
+@keyframes bl{50%{opacity:0}}
+.mock .comp .snd{width:30px;height:30px;border-radius:50%;background:#d97757;display:grid;place-items:center;color:#fff}
+@media (max-width:600px){.mock{grid-template-columns:1fr;height:400px}.mock .side{display:none}}
+
+/* theme picker */
+section{padding:90px 0}
+.sec-h{font-size:clamp(30px,4.4vw,52px);letter-spacing:-.03em;line-height:1.05;margin:0 0 12px}
+.sec-p{color:var(--muted);max-width:36em;margin:0 0 32px}
+.panel{border-radius:26px;padding:26px}
+.groups{display:grid;grid-template-columns:repeat(5,1fr);gap:18px}
+@media (max-width:900px){.groups{grid-template-columns:repeat(2,1fr)}}
+.grp h4{margin:0 0 10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.grp button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;font:500 14px Inter,sans-serif;color:var(--ink);background:transparent;border:1px solid transparent;border-radius:12px;padding:8px 10px;cursor:pointer;transition:background .2s,border-color .2s}
+.grp button:hover{background:var(--chip)}
+.grp button.on{background:var(--chip);border-color:var(--line)}
+.grp button i{width:14px;height:14px;border-radius:4px;flex:none}
+.now{display:flex;align-items:center;gap:12px;margin-bottom:22px;font-size:14px;color:var(--muted)}
+.now b{font:26px/1 VT323,monospace;color:var(--ink);letter-spacing:.02em}
+.now .auto{margin-left:auto}
+
+/* features */
+.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:900px){.feats{grid-template-columns:1fr}}
+.feat{border-radius:22px;padding:24px}
+.feat .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--chip);border:1px solid var(--line);margin-bottom:16px}
+.feat .ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.feat h3{margin:0 0 6px;font-size:18px}
+.feat p{margin:0;color:var(--muted);font-size:15px}
+kbd{font:600 12px ui-monospace,Menlo,monospace;padding:2px 6px;border-radius:6px;border:1px solid var(--line);background:var(--chip)}
+
+/* install */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;counter-reset:s}
+@media (max-width:900px){.steps{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.steps{grid-template-columns:1fr}}
+.step{border-radius:22px;padding:22px;position:relative}
+.step::before{counter-increment:s;content:counter(s);font:30px/1 VT323,monospace;display:block;margin-bottom:12px;color:var(--muted)}
+.step h4{margin:0 0 6px;font-size:16px}
+.step p{margin:0;color:var(--muted);font-size:14.5px}
+.step code{font:13px ui-monospace,Menlo,monospace;background:var(--chip);padding:1px 6px;border-radius:6px}
+
+footer{padding:40px 0 60px;font-size:14px;color:var(--muted)}
+footer .bar{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;align-items:center;padding:18px 22px;border-radius:20px}
+footer a{color:var(--ink)}
+.oy{display:inline-flex;align-items:center;gap:8px}
+.oy img{width:18px;height:18px}
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+
+<nav><div class="wrap"><div class="bar glass">
+  <a class="brand" href="/"><img src="/icons/icon-48.png" alt="">Chatscape</a>
+  <div class="links"><a href="#themes">Themes</a><a href="#features">Features</a><a href="#install">Install</a><a href="/privacy">Privacy</a><a href="https://github.com/openyard-cloud/chatscape" target="_blank" rel="noopener">GitHub</a></div>
+  <a class="btn pri sm" href="#install" id="nav-add">Add to Chrome</a>
+</div></div></nav>
+
+<main>
+<div class="wrap hero">
+  <div>
+    <span class="kick glass">▒ 20 live scenes</span>
+    <h1>Your AI chat, <em>with a view.</em></h1>
+    <p class="lead">Chatscape paints live ASCII and pixel scenes behind your claude.ai chat. Clouds, koi, meteor showers, rain on the window. No account, and nothing leaves your browser.</p>
+    <div class="cta">
+      <a class="btn pri" href="#install" data-add>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M21.2 8H12M3.9 6.1 8.5 14M10.9 21.9 15.5 14"/></svg>
+        <span>Add to Chrome</span></a>
+      <a class="btn sec glass" href="#themes">Try the scenes</a>
+    </div>
+    <p class="note">Free and open source (MIT). Works in Chrome, Edge and Brave.</p>
+  </div>
+  <div class="mock glass" aria-label="How claude.ai looks with Chatscape">
+    <div class="side"><b>Claude</b><span>New chat</span><span class="on">Weekend plans</span><span>Product notes</span><span>Recipes</span></div>
+    <div class="main">
+      <div class="m u">Can you make this chat feel a bit more alive?</div>
+      <div class="m a">Sure. Try a scene behind the conversation. Text stays readable: a soft veil and frosted panels keep the contrast.</div>
+      <div class="m u" id="ask">Something calm for tonight?</div>
+      <div class="comp"><span class="txt" id="ctext"></span><span class="snd"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span></div>
+    </div>
+  </div>
+</div>
+
+<section id="themes">
+  <div class="wrap">
+    <h2 class="sec-h">Pick a scene. It plays right here.</h2>
+    <p class="sec-p">The background of this page is Chatscape itself. Click any scene to switch, the same way the picker works on claude.ai.</p>
+    <div class="panel glass">
+      <div class="now"><span>Now showing</span><b id="nowname">Cloud Drift</b><label class="auto"><input type="checkbox" id="auto" checked> Tour all scenes</label></div>
+      <div class="groups" id="groups"></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" style="padding-top:20px">
+  <div class="wrap">
+    <h2 class="sec-h">Made to stay out of the way.</h2>
+    <p class="sec-p">A wallpaper should be pleasant, not loud. Every control is one click away.</p>
+    <div class="feats">
+      <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h6"/></svg></div><h3>Open it three ways</h3><p>Click the toolbar button, press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd>, or type <kbd>/theme</kbd> in the chat box and press Enter. The message is not sent.</p></div>
+      <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></div><h3>Dim and Glass</h3><p>Dim lays a veil in the page's own colour over the scene. Glass sets how see-through the sidebar and composer are. Text stays easy to read.</p></div>
+      <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Private by design</h3><p>One permission (storage), runs only on claude.ai, no network requests, no analytics. It never reads your messages.</p></div>
+      <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></div><h3>Light on your laptop</h3><p>Up to 30 frames per second, pauses when the tab is hidden, and a still frame when your system asks for reduced motion.</p></div>
+      <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></div><h3>Off means off</h3><p>Turn off restores claude.ai exactly as it was. Your choice syncs across your Chrome profiles.</p></div>
+      <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></div><h3>Add your own scene</h3><p>A scene is a few lines of data: gradients, stars, waves, sprites. No drawing code. Send a pull request and it ships to everyone.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="install" style="padding-top:20px">
+  <div class="wrap">
+    <h2 class="sec-h">Install in a minute.</h2>
+    <p class="sec-p" id="install-note">The Chrome Web Store listing is on its way. Until then, install it by hand:</p>
+    <div class="steps">
+      <div class="step glass"><h4>Download</h4><p><a class="btn pri sm" href="/download/chatscape.zip" style="margin-top:6px">Download .zip</a></p></div>
+      <div class="step glass"><h4>Unzip it</h4><p>Double-click the file. You get a folder named <code>chatscape</code>.</p></div>
+      <div class="step glass"><h4>Load it</h4><p>Open <code>chrome://extensions</code>, turn on <b>Developer mode</b>, click <b>Load unpacked</b> and pick the folder.</p></div>
+      <div class="step glass"><h4>Open claude.ai</h4><p>Reload the page. Cloud Drift appears behind your chat. Press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> to change it.</p></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap"><div class="bar glass">
+  <span>Chatscape is free and open source (MIT). Not affiliated with Anthropic.</span>
+  <span><a href="/privacy">Privacy</a> · <a href="https://github.com/openyard-cloud/chatscape" target="_blank" rel="noopener">GitHub</a> · <a class="oy" href="https://openyard.cloud" target="_blank" rel="noopener"><img src="/openyard.svg" alt="">Part of OpenYard</a></span>
+</div></div></footer>
+
+<script src="/js/engine.js"></script>
+<script src="/js/themes.js"></script>
+<script>
+(() => {
+  // Set once the extension is live on the Chrome Web Store.
+  const STORE_URL = "";
+  if (STORE_URL) {
+    document.querySelectorAll("[data-add], #nav-add").forEach(a => { a.href = STORE_URL; a.target = "_blank"; a.rel = "noopener"; });
+    document.getElementById("install-note").textContent = "Get it from the Chrome Web Store, or install it by hand:";
+  }
+
+  const CS = window.Chatscape, THEMES = CS.THEMES;
+  const canvas = document.getElementById("bg");
+  const renderer = new CS.engine.Renderer(canvas, { fontSize: 14 });
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let theme = CS.themeById("cloud-drift"), clock = 0, last = 0;
+
+  // The brightest colour a scene uses, for its swatch in the picker.
+  const accent = t => {
+    const cols = [];
+    const walk = v => { if (typeof v === "number" && v > 0xff && v <= 0xffffff) cols.push(v); else if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === "object") Object.values(v).forEach(walk); };
+    t.layers.forEach(walk);
+    const lum = c => 0.3 * (c >> 16 & 255) + 0.59 * (c >> 8 & 255) + 0.11 * (c & 255);
+    const best = cols.sort((a, b) => lum(b) - lum(a))[Math.min(1, cols.length - 1)] ?? 0x8ec5f0;
+    return "#" + (best & 0xffffff).toString(16).padStart(6, "0");
+  };
+
+  function apply(t){
+    theme = t;
+    renderer.states.clear();
+    renderer.veil = { color: t.dark ? "rgb(8,10,20)" : "rgb(250,249,245)", alpha: 0.18 };
+    document.body.classList.toggle("light", !t.dark);
+    document.getElementById("nowname").textContent = t.name;
+    document.querySelectorAll("#groups button").forEach(b => b.classList.toggle("on", b.dataset.id === t.id));
+  }
+
+  // picker
+  const groups = {};
+  THEMES.forEach(t => (groups[t.group] = groups[t.group] || []).push(t));
+  document.getElementById("groups").innerHTML = Object.entries(groups).map(([g, list]) =>
+    `<div class="grp"><h4>${g}</h4>${list.map(t => `<button data-id="${t.id}"><i style="background:${accent(t)}"></i>${t.name}</button>`).join("")}</div>`).join("");
+  const auto = document.getElementById("auto");
+  document.getElementById("groups").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    auto.checked = false; apply(CS.themeById(b.dataset.id));
+  });
+  let idx = 0;
+  setInterval(() => { if (!auto.checked || document.hidden) return; idx = (idx + 1) % THEMES.length; apply(THEMES[idx]); }, 7000);
+
+  // render loop, 30 fps, paused when hidden
+  addEventListener("resize", () => { renderer.resize(); });
+  (function loop(now){
+    requestAnimationFrame(loop);
+    if (document.hidden || now - last < 33) return;
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (!reduce) clock += dt;
+    renderer.frame(theme, clock || 10);
+  })(performance.now());
+  apply(theme);
+
+  // composer typing "/theme"
+  const ct = document.getElementById("ctext");
+  const words = ["/theme", "Koi Pond", "/theme", "Meteor Shower"];
+  let wi = 0;
+  (async function typeLoop(){
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    for (;;) {
+      const w = words[wi++ % words.length];
+      for (let i = 0; i <= w.length; i++) { ct.innerHTML = w.slice(0, i) + '<span class="cur"></span>'; await wait(110); }
+      await wait(1800);
+      for (let i = w.length; i >= 0; i--) { ct.innerHTML = w.slice(0, i) + '<span class="cur"></span>'; await wait(40); }
+      await wait(500);
+    }
+  })();
+})();
+</script>
+</body>
+</html>
