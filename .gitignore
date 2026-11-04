@@ -8,3 +8,7 @@ site/js/
 site/icons/
 site/download/
 site/_headers
+# browser tests
+test-results/
+playwright-report/
+tests/live/.auth/

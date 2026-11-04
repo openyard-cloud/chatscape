@@ -1,0 +1,121 @@
+<!doctype html>
+<!-- A stand-in for a claude.ai conversation, served at https://claude.ai/* by the tests.
+     It reproduces what has broken Chatscape before, not claude.ai's exact markup:
+     - colours that compute to color(srgb ...) (color-mix), next to plain rgb()
+     - a 32px solid box-shadow ring under the composer that hides scrolled messages
+     - a decorative full-page grid layer with pointer-events: none
+     - a large Settings dialog over a dark backdrop
+     - light and dark modes switched live through html[data-mode]
+     - its own /theme command in the composer
+     - Enter sends: sent messages are listed in #sent so tests can tell nothing was sent -->
+<html lang="en" data-mode="light">
+<head>
+<meta charset="utf-8">
+<title>Weekend plans - Claude</title>
+<style>
+:root[data-mode="light"] { --bg-000: #ffffff; --bg-100: #faf9f5; --bg-200: #f0eee6; --text-000: #141413; --text-300: #5e5d59; --line: rgba(0,0,0,.08); --composer: #ffffff; }
+:root[data-mode="dark"] { --bg-000: #262624; --bg-100: #1f1e1d; --bg-200: #30302e; --text-000: #f5f4ef; --text-300: #a6a39b; --line: rgba(255,255,255,.1); --composer: #30302e; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg-000); color: var(--text-000); font: 16px/1.6 -apple-system, system-ui, sans-serif; display: flex; overflow: hidden; }
+nav { width: 280px; flex: none; background: var(--bg-200); padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+nav b { font-size: 20px; margin-bottom: 14px; }
+nav a { padding: 6px 10px; border-radius: 8px; color: var(--text-000); text-decoration: none; font-size: 15px; }
+nav a.on { background: var(--line); }
+nav button { margin-top: auto; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--text-000); }
+main { position: relative; flex: 1; display: flex; flex-direction: column; background: color-mix(in srgb, var(--bg-100) 100%, transparent); }
+.grid { position: absolute; inset: 0; pointer-events: none; background-color: var(--bg-100); background-image: linear-gradient(to right, var(--line) 1px, transparent 1px); background-size: 40px 40px; }
+header { position: relative; height: 48px; display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid var(--line); background: var(--bg-100); }
+.scroll { position: relative; flex: 1; overflow: auto; padding: 24px 0 220px; }
+.msgs { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+.user { margin-left: auto; width: fit-content; max-width: 70%; background: var(--bg-200); padding: 10px 16px; border-radius: 16px; margin-bottom: 24px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+.bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 20px 12px; }
+.footer { max-width: 768px; margin: 0 auto; box-shadow: 0 0 0 32px var(--bg-100); background: var(--bg-100); border-radius: 18px; }
+.banner { padding: 12px 16px; border-radius: 14px 14px 0 0; background: var(--bg-200); font-size: 15px; }
+.composer { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--composer); border-radius: 16px; box-shadow: 0 0 0 1px var(--line), 0 4px 20px color-mix(in srgb, black 4%, transparent); }
+.composer [contenteditable] { flex: 1; outline: none; min-height: 24px; }
+.composer [contenteditable]:empty::before { content: "Write a message…"; color: var(--text-300); }
+.hint { text-align: center; color: var(--text-300); font-size: 13px; padding-top: 8px; }
+.backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5); }
+.dialog { position: fixed; top: 6vh; left: 10vw; width: 80vw; height: 84vh; background: var(--bg-000); border-radius: 16px; padding: 28px; }
+#sent { display: none; }
+</style>
+</head>
+<body>
+<nav>
+  <b>Claude</b>
+  <a href="#">New chat</a>
+  <a href="#" class="on">Weekend plans</a>
+  <a href="#">Product notes</a>
+  <a href="#">Recipes</a>
+  <a href="#" id="sidebar-text">Reading list for the trip</a>
+  <button id="open-settings" type="button">Settings</button>
+</nav>
+<main>
+  <div class="grid"></div>
+  <header><span>Weekend plans</span></header>
+  <div class="scroll">
+    <div class="msgs">
+      <div class="user">Can you plan a calm weekend in Da Lat for two?</div>
+      <div id="answer">
+        <p id="answer-text">Here is a slow weekend that leaves room to rest. Arrive Friday evening and walk around Xuan Huong lake while the market opens. On Saturday, take the early cable car to Truc Lam and have lunch near the flower gardens, then spend the afternoon in a café with a view of the pine hills. Sunday is for the night market leftovers you missed, a long breakfast, and the drive back before the evening traffic.</p>
+        <table>
+          <tr><th>Day</th><th>Morning</th><th>Afternoon</th><th>Evening</th></tr>
+          <tr><td>Friday</td><td>Travel</td><td>Check in</td><td>Lake walk</td></tr>
+          <tr><td>Saturday</td><td>Cable car</td><td>Café</td><td>Night market</td></tr>
+          <tr><td>Sunday</td><td>Breakfast</td><td>Drive back</td><td>Home</td></tr>
+        </table>
+        <p>Pack a light jacket: evenings drop to 15°C even in summer.</p>
+      </div>
+    </div>
+  </div>
+  <div class="bottom">
+    <div class="footer" id="footer">
+      <div class="banner">This chat has many images. If new images don't send, start a new chat.</div>
+      <div class="composer" id="composer"><span>+</span><div contenteditable="true" id="editor" role="textbox" aria-label="Write your prompt to Claude"></div><span>Opus</span></div>
+      <div class="hint">Claude can make mistakes.</div>
+    </div>
+  </div>
+</main>
+<!-- like claude.ai, the dialog is added to the page when opened and removed when closed -->
+<template id="settings-tpl">
+  <div class="backdrop" id="backdrop"></div>
+  <div class="dialog" role="dialog" aria-label="Settings" id="settings">
+    <h2>Settings</h2>
+    <p id="settings-text">Appearance. Choose how Claude looks to you. Select a single theme, or sync with your system and automatically switch between day and night themes.</p>
+    <p><button type="button" id="mode-light">Light</button> <button type="button" id="mode-dark">Dark</button> <button type="button" id="close-settings">Close</button></p>
+  </div>
+</template>
+<ul id="sent"></ul>
+<script>
+  const editor = document.getElementById('editor');
+  const setMode = (m) => document.documentElement.setAttribute('data-mode', m);
+  editor.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || e.shiftKey) return;
+    e.preventDefault();
+    const text = editor.innerText.trim();
+    if (!text) return;
+    // claude.ai's own slash command: /theme light|dark (bare /theme flips the mode)
+    if (text.startsWith('/theme')) {
+      const arg = text.split(/\s+/)[1];
+      setMode(arg === 'light' || arg === 'dark' ? arg : document.documentElement.dataset.mode === 'dark' ? 'light' : 'dark');
+    } else {
+      const li = document.createElement('li');
+      li.textContent = text;
+      document.getElementById('sent').append(li);
+    }
+    editor.textContent = '';
+  });
+  document.getElementById('open-settings').onclick = () => {
+    document.body.append(document.getElementById('settings-tpl').content.cloneNode(true));
+    document.getElementById('mode-light').onclick = () => setMode('light');
+    document.getElementById('mode-dark').onclick = () => setMode('dark');
+    document.getElementById('close-settings').onclick = () => { document.getElementById('settings').remove(); document.getElementById('backdrop').remove(); };
+  };
+  const params = new URLSearchParams(location.search);
+  if (params.get('mode')) setMode(params.get('mode'));
+</script>
+</body>
+</html>

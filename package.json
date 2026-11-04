@@ -3,6 +3,14 @@
   "private": true,
   "scripts": {
     "build": "sh scripts/build.sh",
-    "deploy": "sh scripts/build.sh && npx -y wrangler@4 deploy"
+    "deploy": "sh scripts/build.sh && npx -y wrangler@4 deploy",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:live:login": "node tests/live/login.mjs",
+    "test:live": "playwright test --config playwright.live.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "pngjs": "^7.0.0"
   }
 }
