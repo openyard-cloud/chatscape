@@ -28,12 +28,12 @@ code{background:#1a2036;padding:1px 6px;border-radius:6px;font-size:14px}
 <p>Nothing. Chatscape has no servers, sends no network requests, and contains no analytics, tracking or remote code.</p>
 
 <h2>What it stores, and where</h2>
-<p>Your settings only: the chosen scene, the Dim, Glass and Speed values, and whether Chatscape is on. They are saved with <code>chrome.storage.sync</code>, so your browser may sync them across your own signed-in Chrome profiles. Chatscape never sees or transmits them anywhere else.</p>
+<p>Your settings only: the chosen scene, the Dim, Glass and Speed values, and whether Chatscape is on. They are saved with <code>chrome.storage.sync</code> and, as a fallback on this device, <code>chrome.storage.local</code>, so your browser may sync them across your own signed-in Chrome profiles. Chatscape never sees or transmits them anywhere else.</p>
 
 <h2>What it reads on the page</h2>
 <ul>
 <li>Computed background colours and sizes of page elements, to make the right panels see-through. It does not read their text.</li>
-<li>The text in the message box only at the moment you press Enter, and only to check whether it is exactly <code>/theme</code>. Nothing is stored or sent.</li>
+<li>The text in the message box only at the moment you press Enter, and only to check whether it is exactly <code>/chatscape</code>. Nothing is stored or sent.</li>
 </ul>
 
 <h2>Permissions</h2>

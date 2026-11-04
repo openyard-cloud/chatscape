@@ -24,7 +24,7 @@ Give your AI chat a view. Chatscape paints a live ASCII and pixel scene behind t
 • Tech: Code Rain, Neon Rain, Game of Life, Retro 8-bit
 
 Easy to use
-• Open the picker from the toolbar button, with Alt+Shift+T (Option+Shift+T on a Mac), or by typing /theme in the chat box and pressing Enter (the message is not sent).
+• Open the picker from the toolbar button, with Alt+Shift+T (Option+Shift+T on a Mac), or by typing /chatscape in the chat box and pressing Enter (the message is not sent).
 • Arrow keys preview scenes live; Esc closes the picker.
 • Dim keeps text readable, Glass sets how see-through the panels are, Speed 0 freezes the scene.
 • Turn off restores the page exactly as it was.
@@ -45,7 +45,7 @@ Chatscape is an independent project and is not affiliated with or endorsed by An
 Cho khung chat AI của bạn một khung cảnh. Chatscape vẽ cảnh động bằng ký tự ASCII và pixel phía sau khung chat claude.ai và ChatGPT: mây trôi, hồ cá koi, mưa sao băng, mưa bên cửa sổ, phố đêm neon và nhiều cảnh khác.
 
 • 20 cảnh trong 5 nhóm: thiên nhiên, mặt nước, bầu trời đêm, thời tiết, công nghệ.
-• Mở bảng chọn bằng nút trên thanh công cụ, phím Alt+Shift+T (trên Mac là Option+Shift+T), hoặc gõ /theme trong ô chat rồi Enter (tin nhắn không bị gửi).
+• Mở bảng chọn bằng nút trên thanh công cụ, phím Alt+Shift+T (trên Mac là Option+Shift+T), hoặc gõ /chatscape trong ô chat rồi Enter (tin nhắn không bị gửi).
 • Dim giữ chữ dễ đọc, Glass chỉnh độ trong của các khung, Speed 0 cho cảnh đứng yên.
 • Chỉ một quyền (storage), chỉ chạy trên claude.ai và chatgpt.com, không gửi dữ liệu đi đâu, không đọc tin nhắn của bạn.
 

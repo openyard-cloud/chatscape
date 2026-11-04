@@ -34,6 +34,7 @@
     button.plain { all: unset; cursor: pointer; padding: 4px 10px; border-radius: 8px; border: 1px solid currentColor; opacity: 0.8; }
     button.plain:hover { opacity: 1; }
     .hint { font-size: 11px; opacity: 0.6; }
+    .hint.warn { opacity: 1; color: #e8590c; font-weight: 600; }
   `;
 
   function el(tag, props = {}, children = []) {
@@ -153,11 +154,18 @@
           slider('Dim', 'dim', 0, 0.8, 0.05),
           slider('Glass', 'glass', 0.3, 1, 0.02),
           slider('Speed', 'speed', 0, 2, 0.1),
-          el('span', { className: 'hint', text: `Arrows to move, Enter to pick, Esc to close. Open with /theme or ${/Mac|iPhone|iPad/.test(navigator.platform) ? '⌥ Option+Shift+T' : 'Alt+Shift+T'}.` }),
+          (this.hint = el('span', { className: 'hint', text: `Arrows to move, Enter to pick, Esc to close. Open with /chatscape or ${/Mac|iPhone|iPad/.test(navigator.platform) ? '⌥ Option+Shift+T' : 'Alt+Shift+T'}.` })),
         ]),
       ]);
       panel.addEventListener('keydown', (e) => this.onKey(e));
       root.append(panel);
+    }
+
+    // Replaces the hint with a message that matters more, like a tab that needs a reload.
+    notice(text) {
+      if (!this.hint) return;
+      this.hint.textContent = text;
+      this.hint.classList.add('warn');
     }
 
     choose(id) {

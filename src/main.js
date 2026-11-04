@@ -1,6 +1,6 @@
-// Wires everything on a claude.ai or chatgpt.com page: settings from chrome.storage.sync,
+// Wires everything on a claude.ai or chatgpt.com page: saved settings,
 // the wallpaper canvas and its animation loop, the scanner, the picker, and
-// the ways to open it (toolbar button, Alt+Shift+T (Option on a Mac), typing /theme + Enter).
+// the ways to open it (toolbar button, Alt+Shift+T (Option on a Mac), typing /chatscape + Enter).
 (() => {
   'use strict';
   const CS = (globalThis.Chatscape = globalThis.Chatscape || {});
@@ -9,7 +9,7 @@
 
   const DEFAULTS = { enabled: true, theme: 'cloud-drift', dim: 0.35, glass: 0.72, speed: 1 };
   const FRAME_MS = 1000 / 30;
-  const storage = globalThis.chrome?.storage?.sync;
+  const COMMAND = '/chatscape';
 
   let settings = { ...DEFAULTS };
   let renderer = null;
@@ -99,9 +99,51 @@
     startLoop();
   }
 
+  // Settings go to chrome.storage.sync and chrome.storage.local, stamped with the time,
+  // and the newer copy wins when loading: sync can be off or failing in some browsers.
+  // A tab opened before the extension was updated keeps an old copy of this script
+  // that can no longer save; the picker then says to reload the tab.
+  const alive = () => !!globalThis.chrome?.runtime?.id;
+  const areas = () => [globalThis.chrome?.storage?.sync, globalThis.chrome?.storage?.local].filter(Boolean);
+
+  function save(change) {
+    if (!alive()) {
+      picker.notice('Chatscape was updated. Reload this tab to keep your choice.');
+      return;
+    }
+    const values = { ...change, savedAt: Date.now() };
+    for (const area of areas()) {
+      try {
+        area.set(values, () => void chrome.runtime.lastError);
+      } catch {}
+    }
+  }
+
+  function load(done) {
+    const list = alive() ? areas() : [];
+    if (!list.length) return done({});
+    // sync comes first, so it wins a tie (settings saved before there was a timestamp)
+    const found = [];
+    let left = list.length;
+    const finish = () => {
+      if (--left) return;
+      done(found.filter(Boolean).reduce((a, b) => (b.savedAt > a.savedAt ? b : a), found.find(Boolean) || {}));
+    };
+    list.forEach((area, i) => {
+      try {
+        area.get({ ...DEFAULTS, savedAt: 0 }, (items) => {
+          if (!chrome.runtime.lastError && items) found[i] = items;
+          finish();
+        });
+      } catch {
+        finish();
+      }
+    });
+  }
+
   function update(change) {
     apply(change);
-    storage?.set(change);
+    save(change);
   }
 
   const picker = new CS.Picker({ getSettings: () => settings, onChange: update });
@@ -126,12 +168,13 @@
     document.execCommand('delete', false);
   }
 
-  // `/theme` + Enter in the chat box opens the picker instead of sending.
+  // `/chatscape` + Enter in the chat box opens the picker instead of sending. (Not
+  // `/theme`: claude.ai has its own /theme command.)
   // Only the composer's text at that moment is looked at, and only to compare it.
   addEventListener(
     'keydown',
     (e) => {
-      if (e.altKey && e.shiftKey && e.code === 'KeyT') {
+      if (e.altKey && e.shiftKey && (e.code === 'KeyT' || e.keyCode === 84)) {
         e.preventDefault();
         picker.toggle();
         return;
@@ -139,8 +182,8 @@
       if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
       const editor = editorOf(e.target);
       if (!editor || picker.contains(editor)) return;
-      const text = (editor.tagName === 'TEXTAREA' ? editor.value : editor.innerText).trim();
-      if (text !== '/theme') return;
+      const text = (editor.tagName === 'TEXTAREA' ? editor.value : editor.innerText).replace(/[\u200b-\u200d\ufeff]/g, '').trim();
+      if (text !== COMMAND) return;
       e.preventDefault();
       e.stopImmediatePropagation();
       clearEditor(editor);
@@ -162,7 +205,7 @@
   });
 
   globalThis.chrome?.storage?.onChanged?.addListener((changes, area) => {
-    if (area !== 'sync') return;
+    if (area !== 'sync' && area !== 'local') return;
     const next = {};
     for (const [key, { newValue }] of Object.entries(changes)) if (key in DEFAULTS) next[key] = newValue;
     apply(next);
@@ -191,8 +234,7 @@
     dark = CS.pageIsDark();
   }
 
-  if (storage) storage.get(DEFAULTS, boot);
-  else boot({});
+  load(boot);
 
   CS.debug = { picker, get settings() { return settings; }, update };
 })();

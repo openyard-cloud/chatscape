@@ -162,7 +162,7 @@ footer a{color:var(--ink)}
     <h2 class="sec-h">Made to stay out of the way.</h2>
     <p class="sec-p">A wallpaper should be pleasant, not loud. Every control is one click away.</p>
     <div class="feats">
-      <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h6"/></svg></div><h3>Open it three ways</h3><p>Click the toolbar button, press <kbd class="alt">Alt</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd>, or type <kbd>/theme</kbd> in the chat box and press Enter. The message is not sent.</p></div>
+      <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h6"/></svg></div><h3>Open it three ways</h3><p>Click the toolbar button, press <kbd class="alt">Alt</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd>, or type <kbd>/chatscape</kbd> in the chat box and press Enter. The message is not sent.</p></div>
       <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></div><h3>Dim and Glass</h3><p>Dim lays a veil in the page's own colour over the scene. Glass sets how see-through the sidebar and composer are. Text stays easy to read.</p></div>
       <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Private by design</h3><p>One permission (storage), runs only on claude.ai and chatgpt.com, no network requests, no analytics. It never reads your messages.</p></div>
       <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></div><h3>Light on your laptop</h3><p>Up to 30 frames per second, pauses when the tab is hidden, and a still frame when your system asks for reduced motion.</p></div>
@@ -253,9 +253,9 @@ footer a{color:var(--ink)}
   })(performance.now());
   apply(theme);
 
-  // composer typing "/theme"
+  // composer typing "/chatscape"
   const ct = document.getElementById("ctext");
-  const words = ["/theme", "Koi Pond", "/theme", "Meteor Shower"];
+  const words = ["/chatscape", "Koi Pond", "/chatscape", "Meteor Shower"];
   let wi = 0;
   (async function typeLoop(){
     const wait = ms => new Promise(r => setTimeout(r, ms));
