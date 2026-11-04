@@ -17,12 +17,12 @@ Chatscape is an independent open-source project. It is not affiliated with or en
 
 ## Use
 
-- Open the picker: click the Chatscape toolbar button, press **Alt+Shift+T** (**⌥ Option+Shift+T** on a Mac), or type `/theme` in the chat box and press Enter (the message is not sent).
+- Open the picker: click the Chatscape toolbar button, press **Alt+Shift+T** (**⌥ Option+Shift+T** on a Mac), or type `/chatscape` in the chat box and press Enter (the message is not sent).
 - Arrow keys move through the themes and apply them live; Esc closes the picker.
 - **Dim** lays a veil in the page's own colour over the scene so text stays readable. **Glass** sets how see-through the sidebar, composer and menus are. **Speed** 0 freezes the scene.
 - **Turn off** restores the page exactly as it was.
 
-Your choice syncs across your Chrome profiles through `chrome.storage.sync`.
+Your choice syncs across your Chrome profiles through `chrome.storage.sync`, with a copy in `chrome.storage.local` in case sync is off.
 
 ## Themes
 
@@ -38,7 +38,7 @@ Your choice syncs across your Chrome profiles through `chrome.storage.sync`.
 
 - The only permission is `storage`, and the content script runs only on `https://claude.ai/*` and `https://chatgpt.com/*`.
 - No network requests, no analytics, no remote code.
-- The scanner reads computed background colours and sizes, never text. The only text read is the composer's, at the moment you press Enter, to check whether it is exactly `/theme`.
+- The scanner reads computed background colours and sizes, never text. The only text read is the composer's, at the moment you press Enter, to check whether it is exactly `/chatscape`.
 
 ## Add a theme
 
@@ -87,7 +87,7 @@ Inspired by [Pixel Chat Themes](https://github.com/Aqua2409z/pixel-chat-themes) 
 
 ## Tiếng Việt
 
-Chatscape đặt hình nền động vẽ bằng ký tự phía sau khung chat claude.ai và ChatGPT. Có 20 cảnh, không cần tài khoản, không gửi dữ liệu đi đâu. Tải [chatscape.zip](https://chatscape.openyard.cloud/download/chatscape.zip) rồi giải nén. Cài đặt: mở `chrome://extensions`, bật **Developer mode**, bấm **Load unpacked** và chọn thư mục `chatscape`. Đổi cảnh bằng nút trên thanh công cụ, phím **Alt+Shift+T**, hoặc gõ `/theme` rồi Enter trong ô chat.
+Chatscape đặt hình nền động vẽ bằng ký tự phía sau khung chat claude.ai và ChatGPT. Có 20 cảnh, không cần tài khoản, không gửi dữ liệu đi đâu. Tải [chatscape.zip](https://chatscape.openyard.cloud/download/chatscape.zip) rồi giải nén. Cài đặt: mở `chrome://extensions`, bật **Developer mode**, bấm **Load unpacked** và chọn thư mục `chatscape`. Đổi cảnh bằng nút trên thanh công cụ, phím **Alt+Shift+T**, hoặc gõ `/chatscape` rồi Enter trong ô chat.
 
 ## License
 

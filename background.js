@@ -1,9 +1,8 @@
 // Opens the in-page picker from the toolbar button or the keyboard command.
-const SITES = ['https://claude.ai/', 'https://chatgpt.com/'];
+// The extension may not be allowed to read the tab's URL, so it just asks the tab;
+// tabs without Chatscape have no listener and the error is ignored.
 const toggle = (tab) => {
-  if (tab?.id && SITES.some((site) => tab.url?.startsWith(site))) {
-    chrome.tabs.sendMessage(tab.id, { type: 'toggle-picker' }).catch(() => {});
-  }
+  if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'toggle-picker' }).catch(() => {});
 };
 
 chrome.action.onClicked.addListener(toggle);
