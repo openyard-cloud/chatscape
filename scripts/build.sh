@@ -8,7 +8,7 @@ VERSION=$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' manifest.json)
 rm -rf dist site/js site/icons site/download site/_headers
 mkdir -p dist/chatscape site/js site/download
 cp -R manifest.json background.js icons src LICENSE dist/chatscape/
-(cd dist && zip -qr "chatscape-$VERSION.zip" chatscape)
+node scripts/zip.mjs dist/chatscape "dist/chatscape-$VERSION.zip"
 
 cp src/engine.js src/themes.js site/js/
 cp -R icons site/icons
