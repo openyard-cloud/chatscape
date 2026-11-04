@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Chatscape: live ASCII wallpapers for claude.ai",
+  "name": "Chatscape: live ASCII wallpapers for Claude and ChatGPT",
   "short_name": "Chatscape",
-  "version": "0.1.1",
-  "description": "Animated ASCII and pixel scenes behind your claude.ai chat. 20 themes, no account, nothing leaves your browser.",
+  "version": "0.2.0",
+  "description": "Animated ASCII and pixel scenes behind your claude.ai and ChatGPT chat. 20 themes, no account, nothing leaves your browser.",
   "permissions": ["storage"],
   "background": { "service_worker": "background.js" },
   "action": {
@@ -12,13 +12,13 @@
   },
   "commands": {
     "toggle-picker": {
-      "suggested_key": { "default": "Alt+Shift+T" },
+      "suggested_key": { "default": "Alt+Shift+T", "mac": "Alt+Shift+T" },
       "description": "Open the theme picker"
     }
   },
   "content_scripts": [
     {
-      "matches": ["https://claude.ai/*"],
+      "matches": ["https://claude.ai/*", "https://chatgpt.com/*"],
       "js": ["src/engine.js", "src/themes.js", "src/scanner.js", "src/picker.js", "src/main.js"],
       "css": ["src/page.css"],
       "run_at": "document_idle"

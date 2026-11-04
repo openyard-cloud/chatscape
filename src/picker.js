@@ -153,7 +153,7 @@
           slider('Dim', 'dim', 0, 0.8, 0.05),
           slider('Glass', 'glass', 0.3, 1, 0.02),
           slider('Speed', 'speed', 0, 2, 0.1),
-          el('span', { className: 'hint', text: 'Arrows to move, Enter to pick, Esc to close. Open with /theme or Alt+Shift+T.' }),
+          el('span', { className: 'hint', text: `Arrows to move, Enter to pick, Esc to close. Open with /theme or ${/Mac|iPhone|iPad/.test(navigator.platform) ? '⌥ Option+Shift+T' : 'Alt+Shift+T'}.` }),
         ]),
       ]);
       panel.addEventListener('keydown', (e) => this.onKey(e));
