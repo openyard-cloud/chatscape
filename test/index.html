@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- A stand-in for claude.ai's layout (opaque page, sidebar, messages, composer)
+     to check the wallpaper and the scanner without a login. Open with
+     ?theme=<id>&mode=dark|light&picker=1 -->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Chatscape test page</title>
+<link rel="stylesheet" href="../src/page.css">
+<style>
+  body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #faf9f5; color: #1f1e1d; display: flex; height: 100vh; }
+  body.dark { background: #262624; color: #f5f4ef; }
+  .sidebar { width: 260px; background: #f0eee6; padding: 16px; box-sizing: border-box; }
+  .dark .sidebar { background: #1f1e1d; }
+  .main { flex: 1; display: flex; flex-direction: column; background: inherit; }
+  .chat { flex: 1; overflow: auto; padding: 32px 15%; }
+  .msg { margin: 0 0 20px; }
+  .user { background: #f0eee6; border-radius: 12px; padding: 10px 14px; margin-left: 30%; }
+  .dark .user { background: #141413; }
+  .composer { margin: 16px 15% 24px; background: #ffffff; border-radius: 16px; padding: 16px; min-height: 56px; border: 1px solid #ddd; }
+  .dark .composer { background: #30302e; border-color: #444; }
+</style>
+</head>
+<body>
+  <nav class="sidebar"><b>Claude</b><p>New chat</p><p>Recents</p><p>Kế hoạch sản phẩm</p><p>Hình nền động</p></nav>
+  <div class="main">
+    <div class="chat">
+      <p class="msg user">Làm cho khung chat của tôi sống động hơn được không?</p>
+      <p class="msg">Được. Chatscape vẽ cảnh động bằng ký tự phía sau khung chat. Chữ vẫn phải đọc rõ: lớp phủ mờ và các khung kính giữ độ tương phản.</p>
+      <p class="msg">The quick brown fox jumps over the lazy dog. 0123456789 — readability check for long paragraphs over the wallpaper.</p>
+    </div>
+    <div class="composer" contenteditable="true"></div>
+  </div>
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('mode') === 'dark') document.body.classList.add('dark');
+</script>
+<script src="../src/engine.js"></script>
+<script src="../src/themes.js"></script>
+<script src="../src/scanner.js"></script>
+<script src="../src/picker.js"></script>
+<script src="../src/main.js"></script>
+<script>
+  if (q.get('theme')) Chatscape.debug.update({ theme: q.get('theme') });
+  if (q.get('picker')) Chatscape.debug.picker.open();
+</script>
+</body>
+</html>

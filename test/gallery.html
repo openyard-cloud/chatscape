@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- Every theme side by side, to review the library at a glance. -->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Chatscape gallery</title>
+<style>
+  body { margin: 0; padding: 12px; background: #111; color: #eee; font: 12px system-ui, sans-serif; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  figure { margin: 0; }
+  canvas { width: 100%; display: block; border-radius: 6px; }
+  figcaption { padding: 4px 2px; }
+</style>
+</head>
+<body>
+<script src="../src/engine.js"></script>
+<script src="../src/themes.js"></script>
+<script>
+  const t = Number(new URLSearchParams(location.search).get('t') || 6);
+  for (const theme of Chatscape.THEMES) {
+    const fig = document.createElement('figure');
+    const canvas = document.createElement('canvas');
+    const cap = document.createElement('figcaption');
+    cap.textContent = `${theme.name} (${theme.id})`;
+    fig.append(canvas, cap);
+    document.body.append(fig);
+    new Chatscape.engine.Renderer(canvas, { columns: 64, rows: 22, fontSize: 9 }).frame(theme, t);
+  }
+</script>
+</body>
+</html>
