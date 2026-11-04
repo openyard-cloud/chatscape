@@ -1,6 +1,6 @@
-// Wires everything on a claude.ai page: settings from chrome.storage.sync,
+// Wires everything on a claude.ai or chatgpt.com page: settings from chrome.storage.sync,
 // the wallpaper canvas and its animation loop, the scanner, the picker, and
-// the ways to open it (toolbar button, Alt+Shift+T, typing /theme + Enter).
+// the ways to open it (toolbar button, Alt+Shift+T (Option on a Mac), typing /theme + Enter).
 (() => {
   'use strict';
   const CS = (globalThis.Chatscape = globalThis.Chatscape || {});

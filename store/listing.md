@@ -4,17 +4,17 @@ Everything the Chrome Web Store developer dashboard asks for, ready to paste. Up
 
 ## Store listing
 
-**Name:** Chatscape: live wallpapers for claude.ai
+**Name:** Chatscape: live wallpapers for Claude and ChatGPT
 
 **Summary (132 characters max):**
-Live ASCII and pixel wallpapers behind your claude.ai chat. 20 animated scenes, no account, nothing leaves your browser.
+Live ASCII and pixel wallpapers behind your Claude and ChatGPT chat. 20 scenes, no account, nothing leaves your browser.
 
 **Category:** Personalization (Themes)  
 **Language:** English (add Vietnamese as a second language with the text below)
 
 **Description:**
 
-Give your AI chat a view. Chatscape paints a live ASCII and pixel scene behind the claude.ai chat: drifting clouds, a koi pond, meteor showers, rain on the window, a neon city and more.
+Give your AI chat a view. Chatscape paints a live ASCII and pixel scene behind the claude.ai and ChatGPT chat: drifting clouds, a koi pond, meteor showers, rain on the window, a neon city and more.
 
 20 scenes in five groups
 • Nature: Cloud Drift, Fireflies, Bamboo Grove, Sakura
@@ -24,13 +24,13 @@ Give your AI chat a view. Chatscape paints a live ASCII and pixel scene behind t
 • Tech: Code Rain, Neon Rain, Game of Life, Retro 8-bit
 
 Easy to use
-• Open the picker from the toolbar button, with Alt+Shift+T, or by typing /theme in the chat box and pressing Enter (the message is not sent).
+• Open the picker from the toolbar button, with Alt+Shift+T (Option+Shift+T on a Mac), or by typing /theme in the chat box and pressing Enter (the message is not sent).
 • Arrow keys preview scenes live; Esc closes the picker.
 • Dim keeps text readable, Glass sets how see-through the panels are, Speed 0 freezes the scene.
-• Turn off restores claude.ai exactly as it was.
+• Turn off restores the page exactly as it was.
 
 Private by design
-• One permission (storage) and it runs only on claude.ai.
+• One permission (storage) and it runs only on claude.ai and chatgpt.com.
 • No network requests, no analytics, no remote code. It never reads your messages.
 
 Light on your computer: up to 30 frames per second, paused when the tab is hidden, and a still frame when your system asks for reduced motion.
@@ -42,12 +42,12 @@ Chatscape is an independent project and is not affiliated with or endorsed by An
 
 **Vietnamese description:**
 
-Cho khung chat AI của bạn một khung cảnh. Chatscape vẽ cảnh động bằng ký tự ASCII và pixel phía sau khung chat claude.ai: mây trôi, hồ cá koi, mưa sao băng, mưa bên cửa sổ, phố đêm neon và nhiều cảnh khác.
+Cho khung chat AI của bạn một khung cảnh. Chatscape vẽ cảnh động bằng ký tự ASCII và pixel phía sau khung chat claude.ai và ChatGPT: mây trôi, hồ cá koi, mưa sao băng, mưa bên cửa sổ, phố đêm neon và nhiều cảnh khác.
 
 • 20 cảnh trong 5 nhóm: thiên nhiên, mặt nước, bầu trời đêm, thời tiết, công nghệ.
-• Mở bảng chọn bằng nút trên thanh công cụ, phím Alt+Shift+T, hoặc gõ /theme trong ô chat rồi Enter (tin nhắn không bị gửi).
+• Mở bảng chọn bằng nút trên thanh công cụ, phím Alt+Shift+T (trên Mac là Option+Shift+T), hoặc gõ /theme trong ô chat rồi Enter (tin nhắn không bị gửi).
 • Dim giữ chữ dễ đọc, Glass chỉnh độ trong của các khung, Speed 0 cho cảnh đứng yên.
-• Chỉ một quyền (storage), chỉ chạy trên claude.ai, không gửi dữ liệu đi đâu, không đọc tin nhắn của bạn.
+• Chỉ một quyền (storage), chỉ chạy trên claude.ai và chatgpt.com, không gửi dữ liệu đi đâu, không đọc tin nhắn của bạn.
 
 Miễn phí, mã nguồn mở (MIT). Một dự án của OpenYard: https://openyard.cloud
 
@@ -64,11 +64,11 @@ Regenerate them from `test/index.html` and `store/promo.html` (see the header co
 
 ## Privacy practices tab
 
-**Single purpose:** Show an animated wallpaper behind the claude.ai chat interface and let the user pick and adjust it.
+**Single purpose:** Show an animated wallpaper behind the claude.ai and ChatGPT chat interfaces and let the user pick and adjust it.
 
 **Permission justification**
 - `storage`: saves the user's chosen scene and the Dim, Glass and Speed settings, synced across the user's own Chrome profiles.
-- Host permission `https://claude.ai/*` (content script): the wallpaper is drawn only on claude.ai, behind its chat interface.
+- Host permissions `https://claude.ai/*` and `https://chatgpt.com/*` (content script): the wallpaper is drawn only on those two sites, behind their chat interface.
 
 **Remote code:** No, I am not using remote code.
 
