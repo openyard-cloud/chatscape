@@ -11,11 +11,29 @@
   const MIN_GLASS_AREA = 1600;
   const CLEAR_RATIO = 0.3;
 
+  // Computed colours come back as rgb() for most pages, but newer CSS (color-mix,
+  // oklch, lab) comes back as color(srgb ...) or oklch(...). Those are painted on a
+  // 1x1 canvas once and read back as sRGB, then cached.
+  const cache = new Map();
+  let probe = null;
   function parseColor(value) {
-    const m = /rgba?\(([^)]+)\)/.exec(value);
-    if (!m) return null;
-    const [r, g, b, a = '1'] = m[1].split(/[\s,/]+/).filter(Boolean);
-    return { r: +r, g: +g, b: +b, a: +a };
+    if (!value || value === 'transparent' || value === 'rgba(0, 0, 0, 0)') return null;
+    const m = /^rgba?\(([^)]+)\)$/.exec(value);
+    if (m) {
+      const [r, g, b, a = '1'] = m[1].split(/[\s,/]+/).filter(Boolean);
+      return { r: +r, g: +g, b: +b, a: a.endsWith('%') ? parseFloat(a) / 100 : +a };
+    }
+    if (cache.has(value)) return cache.get(value);
+    probe ??= document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+    probe.canvas.width = probe.canvas.height = 1;
+    probe.clearRect(0, 0, 1, 1);
+    probe.fillStyle = 'rgba(0, 0, 0, 0)';
+    probe.fillStyle = value;
+    probe.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = probe.getImageData(0, 0, 1, 1).data;
+    const color = a ? { r, g, b, a: a / 255 } : null;
+    cache.set(value, color);
+    return color;
   }
 
   class Scanner {
