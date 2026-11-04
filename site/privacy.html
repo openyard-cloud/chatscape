@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chatscape privacy policy</title>
+<link rel="icon" href="/icons/icon-32.png">
+<style>
+body{margin:0;background:#0b1020;color:#e8eaf2;font:16px/1.7 Inter,system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:56px 20px 80px}
+a{color:#8ec5ff}
+h1{font-size:34px;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:20px;margin:36px 0 8px}
+p,li{color:#c4c8d6}
+.muted{color:#8b90a3;font-size:14px}
+code{background:#1a2036;padding:1px 6px;border-radius:6px;font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<p><a href="/">← Chatscape</a></p>
+<h1>Privacy policy</h1>
+<p class="muted">Last updated: November 4, 2026</p>
+
+<p>Chatscape is a browser extension that draws animated wallpapers behind the chat on claude.ai. It is built so that nothing about you or your conversations leaves your browser.</p>
+
+<h2>What Chatscape collects</h2>
+<p>Nothing. Chatscape has no servers, sends no network requests, and contains no analytics, tracking or remote code.</p>
+
+<h2>What it stores, and where</h2>
+<p>Your settings only: the chosen scene, the Dim, Glass and Speed values, and whether Chatscape is on. They are saved with <code>chrome.storage.sync</code>, so your browser may sync them across your own signed-in Chrome profiles. Chatscape never sees or transmits them anywhere else.</p>
+
+<h2>What it reads on the page</h2>
+<ul>
+<li>Computed background colours and sizes of page elements, to make the right panels see-through. It does not read their text.</li>
+<li>The text in the message box only at the moment you press Enter, and only to check whether it is exactly <code>/theme</code>. Nothing is stored or sent.</li>
+</ul>
+
+<h2>Permissions</h2>
+<ul>
+<li><code>storage</code>: to remember your settings.</li>
+<li>Access to <code>https://claude.ai/*</code>: the only site where Chatscape runs.</li>
+</ul>
+
+<h2>Changes and contact</h2>
+<p>If this policy changes, the new version is published on this page and in the <a href="https://github.com/openyard-cloud/chatscape">source repository</a>, where you can also open an issue with any question.</p>
+<p>Chatscape is independent open-source software and is not affiliated with or endorsed by Anthropic.</p>
+</main>
+</body>
+</html>

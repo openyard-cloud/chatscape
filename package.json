@@ -1,0 +1,8 @@
+{
+  "name": "chatscape",
+  "private": true,
+  "scripts": {
+    "build": "sh scripts/build.sh",
+    "deploy": "sh scripts/build.sh && npx -y wrangler@4 deploy"
+  }
+}

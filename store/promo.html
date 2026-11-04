@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- Renders store artwork: ?w=440&h=280&theme=cloud-drift (small promo tile), or 1400x560 (marquee). -->
+<html><head><meta charset="utf-8">
+<style>
+html,body{margin:0;overflow:hidden}
+canvas{position:fixed;inset:0;width:100vw;height:100vh}
+.t{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-family:-apple-system,Helvetica Neue,Arial,sans-serif;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.35)}
+.t .row{display:flex;align-items:center;gap:14px}
+.t img{width:var(--ic);height:var(--ic);border-radius:calc(var(--ic) * .22);image-rendering:pixelated;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.t b{font-size:var(--fs);font-weight:700;letter-spacing:-.03em}
+.t span{font-size:calc(var(--fs) * .36);opacity:.92}
+.light .t{color:#16161a;text-shadow:none}
+</style></head>
+<body>
+<canvas id="c"></canvas>
+<div class="t"><div class="row"><img src="../icons/icon-128.png" alt=""><b>Chatscape</b></div><span id="tag">Live wallpapers for your AI chat</span></div>
+<script src="../src/engine.js"></script>
+<script src="../src/themes.js"></script>
+<script>
+const q = new URLSearchParams(location.search), w = +(q.get('w') || 440), h = +(q.get('h') || 280);
+document.body.style.cssText = `width:${w}px;height:${h}px;--fs:${Math.round(h * 0.2)}px;--ic:${Math.round(h * 0.2)}px`;
+const theme = Chatscape.themeById(q.get('theme') || 'cloud-drift');
+if (!theme.dark) document.body.classList.add('light');
+const r = new Chatscape.engine.Renderer(document.getElementById('c'), { fontSize: Math.max(11, Math.round(h / 22)) });
+r.frame(theme, 8);
+</script>
+</body></html>
