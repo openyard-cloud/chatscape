@@ -3,5 +3,8 @@
   "account_id": "7281c7193a9e8bcd8e0d8ffe1bd17b0a",
   "compatibility_date": "2026-10-01",
   "assets": { "directory": "./site" },
+  // every pull request gets a preview URL from Cloudflare Worker Previews
+  "preview_urls": true,
+  "previews": {},
   "routes": [{ "pattern": "chatscape.openyard.cloud", "custom_domain": true }]
 }
