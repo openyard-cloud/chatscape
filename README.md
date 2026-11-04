@@ -77,7 +77,7 @@ store/          Chrome Web Store listing text and artwork
 scripts/build.sh  builds dist/chatscape-<version>.zip and the site
 ```
 
-To release: bump `version` in `manifest.json`, run `npm run deploy` (builds the zip and publishes the site), then upload `dist/chatscape-<version>.zip` in the Chrome Web Store dashboard using `store/listing.md`.
+To release: bump `version` in `manifest.json` in a pull request. When it is merged, Cloudflare Workers Builds runs `sh scripts/build.sh` and `npx wrangler deploy`, so chatscape.openyard.cloud serves the new zip (saved as `chatscape-<version>.zip`). Then upload that zip in the Chrome Web Store dashboard using `store/listing.md`. Every pull request also gets a preview build.
 
 The canvas sits behind the page at `z-index: -1`. The scanner finds opaque backgrounds by computed style instead of class names, so it survives most claude.ai and ChatGPT redesigns. Rendering runs at up to 30 frames per second, pauses when the tab is hidden, and draws a single still frame when the system asks for reduced motion.
 
