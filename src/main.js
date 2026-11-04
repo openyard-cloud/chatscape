@@ -168,9 +168,27 @@
     apply(next);
   });
 
+  // claude.ai and ChatGPT switch between light and dark without a reload. When
+  // the page's mode flips, start over so the glass and the veil read the new colours.
+  let dark = null, modeTimer = 0;
+  function checkMode() {
+    const now = CS.pageIsDark();
+    if (dark !== null && now !== dark && settings.enabled) {
+      disable();
+      enable();
+    }
+    dark = now;
+  }
+  const soon = () => { clearTimeout(modeTimer); modeTimer = setTimeout(checkMode, 150); };
+  const modeObserver = new MutationObserver(soon);
+  modeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-mode', 'data-theme', 'style'] });
+  modeObserver.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-mode', 'data-theme'] });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', soon);
+
   function boot(saved) {
     settings = { ...DEFAULTS, ...saved };
     if (settings.enabled) enable();
+    dark = CS.pageIsDark();
   }
 
   if (storage) storage.get(DEFAULTS, boot);
