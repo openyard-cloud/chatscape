@@ -93,6 +93,7 @@ section{padding:90px 0}
 .feat .ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .feat h3{margin:0 0 6px;font-size:18px}
 .feat p{margin:0;color:var(--muted);font-size:15px}
+.ver{margin:10px 0 0;font-size:13px;opacity:.7}.ver code{font:12px ui-monospace,Menlo,monospace}
 kbd{font:600 12px ui-monospace,Menlo,monospace;padding:2px 6px;border-radius:6px;border:1px solid var(--line);background:var(--chip);white-space:nowrap;display:inline-block;line-height:1.4}
 
 /* install */
@@ -177,7 +178,7 @@ footer a{color:var(--ink)}
     <h2 class="sec-h">Install in a minute.</h2>
     <p class="sec-p" id="install-note">The Chrome Web Store listing is on its way. Until then, install it by hand:</p>
     <div class="steps">
-      <div class="step glass"><h4>Download</h4><p><a class="btn pri sm" href="/download/chatscape.zip" style="margin-top:6px">Download .zip</a></p></div>
+      <div class="step glass"><h4>Download</h4><p><a class="btn pri sm" id="dl" href="/download/chatscape.zip" style="margin-top:6px">Download .zip</a></p><p class="ver" id="dl-file" hidden></p></div>
       <div class="step glass"><h4>Unzip it</h4><p>Double-click the file. You get a folder named <code>chatscape</code>.</p></div>
       <div class="step glass"><h4>Load it</h4><p>Open <code>chrome://extensions</code>, turn on <b>Developer mode</b>, click <b>Load unpacked</b> and pick the folder.</p></div>
       <div class="step glass"><h4>Open Claude or ChatGPT</h4><p>Reload claude.ai or chatgpt.com. Cloud Drift appears behind your chat. Press <kbd class="alt">Alt</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> to change it.</p></div>
@@ -198,6 +199,14 @@ footer a{color:var(--ink)}
   // Macs have no Alt key: the same key is Option.
   if (/Mac|iPhone|iPad/.test(navigator.platform)) document.querySelectorAll("kbd.alt").forEach(k => k.textContent = "⌥ Option");
   // Set once the extension is live on the Chrome Web Store.
+  // The version comes from manifest.json at build time (scripts/build.sh).
+  fetch("/download/version.json").then(r => r.ok ? r.json() : null).then(v => {
+    if (!v?.version) return;
+    document.getElementById("dl").textContent = `Download v${v.version}`;
+    const f = document.getElementById("dl-file");
+    f.innerHTML = `<code>chatscape-${v.version}.zip</code>`;
+    f.hidden = false;
+  }).catch(() => {});
   const STORE_URL = "";
   if (STORE_URL) {
     document.querySelectorAll("[data-add], #nav-add").forEach(a => { a.href = STORE_URL; a.target = "_blank"; a.rel = "noopener"; });
