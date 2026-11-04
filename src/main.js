@@ -32,7 +32,10 @@
 
   function veil() {
     const c = scanner?.pageColor ?? CS.Scanner.initialPageColor() ?? (CS.pageIsDark() ? { r: 38, g: 38, b: 36 } : { r: 250, g: 249, b: 245 });
-    return { color: `rgb(${c.r}, ${c.g}, ${c.b})`, alpha: settings.dim };
+    // A dark scene under a light page (or a light one under a dark page) turns the
+    // page muddy, so the veil gets strong enough to keep text readable.
+    const mismatch = !!CS.themeById(settings.theme)?.dark !== CS.pageIsDark();
+    return { color: `rgb(${c.r}, ${c.g}, ${c.b})`, alpha: mismatch ? Math.max(settings.dim, 0.78) : settings.dim };
   }
 
   function loop(now) {

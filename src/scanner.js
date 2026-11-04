@@ -9,6 +9,7 @@
   const CLEAR = 'data-chatscape-clear';
   const GLASS = 'data-chatscape-glass';
   const SOLID = 'data-chatscape-solid';
+  const NOSHADOW = 'data-chatscape-noshadow';
   const DIALOG = '[role="dialog"], [role="alertdialog"], dialog, [aria-modal="true"]';
   const MIN_GLASS_AREA = 1600;
   const CLEAR_RATIO = 0.3;
@@ -38,6 +39,21 @@
     return color;
   }
 
+  // Pages also paint surfaces with shadows: claude.ai rings its composer area with
+  // `0 0 0 32px white` to hide messages scrolling under it. A sharp (no blur), opaque
+  // and wide shadow is a surface, not a shadow, so it goes too. Thin rings stay.
+  function solidShadow(value) {
+    for (const part of value.split(/,(?![^(]*\))/)) {
+      if (part.includes('inset')) continue;
+      const m = /^\s*((?:rgba?|color|oklch|oklab|lab|lch|hsla?)\([^)]*\)|#\w+|[a-z]+)\s+(.*)$/.exec(part);
+      if (!m) continue;
+      const c = parseColor(m[1]);
+      const [x = 0, y = 0, blur = 0, spread = 0] = m[2].match(/-?[\d.]+/g)?.map(Number) || [];
+      if (c && c.a >= 0.9 && blur === 0 && Math.max(Math.abs(x), Math.abs(y), spread) >= 8) return true;
+    }
+    return false;
+  }
+
   class Scanner {
     constructor(skip) {
       this.skip = skip;
@@ -58,10 +74,11 @@
       this.observer.disconnect();
       clearInterval(this.sweep);
       clearTimeout(this.timer);
-      for (const el of document.querySelectorAll(`[${CLEAR}], [${GLASS}]`)) {
+      for (const el of document.querySelectorAll(`[${CLEAR}], [${GLASS}], [${NOSHADOW}]`)) {
         el.removeAttribute(CLEAR);
         el.removeAttribute(GLASS);
         el.removeAttribute(SOLID);
+        el.removeAttribute(NOSHADOW);
         el.style.removeProperty('--chatscape-rgb');
       }
     }
@@ -84,6 +101,7 @@
       for (const el of all) {
         if (this.skip(el) || el.hasAttribute(CLEAR) || el.hasAttribute(GLASS)) continue;
         const style = getComputedStyle(el);
+        if (style.boxShadow !== 'none' && solidShadow(style.boxShadow)) el.setAttribute(NOSHADOW, '');
         const color = parseColor(style.backgroundColor);
         if (!color || color.a < 0.5) continue;
         const rect = el.getBoundingClientRect();
