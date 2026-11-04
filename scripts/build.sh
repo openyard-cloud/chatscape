@@ -15,5 +15,6 @@ cp -R icons site/icons
 cp "dist/chatscape-$VERSION.zip" site/download/chatscape.zip
 cp "dist/chatscape-$VERSION.zip" "site/download/chatscape-$VERSION.zip"
 # the stable link saves as chatscape-<version>.zip
+printf '{"version":"%s"}\n' "$VERSION" > site/download/version.json
 printf '/download/chatscape.zip\n  Content-Disposition: attachment; filename="chatscape-%s.zip"\n' "$VERSION" > site/_headers
 echo "Built dist/chatscape-$VERSION.zip and site/"
