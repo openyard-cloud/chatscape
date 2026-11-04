@@ -29,6 +29,16 @@
     return (ch(16) << 16) | (ch(8) << 8) | ch(0);
   }
 
+  // Lightness turned over, hue and saturation kept: what CSS invert(1) hue-rotate(180deg)
+  // does, near enough. Applied before that filter, it gives the colour back.
+  function flipLightness(c) {
+    const r = ((c >> 16) & 255) / 255, gr = ((c >> 8) & 255) / 255, b = (c & 255) / 255;
+    const hi = Math.max(r, gr, b), lo = Math.min(r, gr, b);
+    const shift = 1 - hi - lo; // moves the lightness (hi + lo) / 2 to 1 minus itself
+    const ch = (v) => Math.round(clamp01(v + shift) * 255);
+    return (ch(r) << 16) | (ch(gr) << 8) | ch(b);
+  }
+
   const css = (c) => '#' + (c & 0xffffff).toString(16).padStart(6, '0');
   const pick = (list, r) => list[Math.floor(r * list.length) % list.length];
 
@@ -134,7 +144,10 @@
     },
 
     // { x, y, r, glyphs, fg, bg, bite, glow }: a moon or sun; `bite` makes a crescent.
+    // On an inverted canvas the disc is painted pre-flipped, so a sun stays a sun.
     disc(g, t, L) {
+      const keep = (c) => (c === undefined || !g.flipped ? c : flipLightness(c));
+      const fg = keep(L.fg ?? L.bg), bg = keep(L.bg), glow = keep(L.glow);
       const cx = L.x * g.w;
       const cy = L.y * g.h;
       const R = L.r;
@@ -144,9 +157,9 @@
           const d = Math.hypot((x - cx) / ASPECT, y - cy);
           const bitten = L.bite && Math.hypot((x - cx - R * L.bite * ASPECT) / ASPECT, y - cy + R * 0.3) < R;
           if (d < R && !bitten) {
-            g.put(x, y, L.glyphs ? pick(L.glyphs, hash(x, y, 3)) : ' ', L.fg ?? L.bg, L.bg);
+            g.put(x, y, L.glyphs ? pick(L.glyphs, hash(x, y, 3)) : ' ', fg, bg);
           } else if (L.glow !== undefined && d < reach && !bitten) {
-            g.put(x, y, ' ', 0, mix(g.bgAt(x, y), L.glow, (1 - (d - R) / (reach - R)) * 0.45));
+            g.put(x, y, ' ', 0, mix(g.bgAt(x, y), glow, (1 - (d - R) / (reach - R)) * 0.45));
           }
         }
       }
@@ -418,6 +431,7 @@
       this.fixed = opts.columns ? { columns: opts.columns, rows: opts.rows } : null;
       this.states = new Map();
       this.veil = null;
+      this.flipped = false; // set when the canvas is shown through an invert filter
       this.resize();
     }
 
@@ -458,6 +472,7 @@
     frame(theme, t) {
       const g = this.grid;
       g.reset();
+      g.flipped = this.flipped;
       for (const layer of theme.layers) LAYERS[layer.type](g, t, layer, this.state(layer));
       this.draw();
     }

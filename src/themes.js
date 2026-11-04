@@ -125,7 +125,7 @@
       layers: [
         { type: 'gradient', from: 0xffd6a5, to: 0xff9f80, y1: 0.45 },
         { type: 'gradient', from: 0x2b5d8a, to: 0x12304f, y0: 0.45 },
-        { type: 'disc', x: 0.3, y: 0.4, r: 3, bg: 0xffeaa0, glow: 0xffe2a0 },
+        { type: 'disc', x: 0.9, y: 0.4, r: 3, bg: 0xffeaa0, glow: 0xffe2a0 },
         { type: 'waves', glyphs: '~-', from: 0x6fa3cf, to: 0x2d5f8f, fx: 0.5, fy: 0.9, speed: 2, threshold: 1.1, y0: 0.45 },
         { type: 'sprites', speed: 1.4, dir: 1, count: 4, bob: 1, y0: 0.5, y1: 0.95, items: [{ color: 0xfbfbfb, frames: [['  /\\  ', '_/__\\_', '\\____/']] }] },
       ],
@@ -140,7 +140,7 @@
       layers: [
         { type: 'gradient', from: 0x060a22, to: 0x1c2555 },
         { type: 'stars', density: 0.03, glyphs: '.·*+', from: 0x2a3060, to: 0xffffff },
-        { type: 'disc', x: 0.78, y: 0.25, r: 4, glyphs: '%t', fg: 0x8a8264, bg: 0xefe6c4, bite: 0.6, glow: 0x3a3f70 },
+        { type: 'disc', x: 0.9, y: 0.2, r: 4, glyphs: '%t', fg: 0x8a8264, bg: 0xefe6c4, bite: 0.6, glow: 0x3a3f70 },
         { type: 'clouds', density: 0.5, speed: 0.6, glyphs: 'StX%stx', fg: 0x6a7cd0, bg: 0x24337a, seed: 50 },
       ],
     },
@@ -211,7 +211,7 @@
       layers: [
         { type: 'gradient', from: 0x6b4aa0, to: 0xffa56b, y1: 0.55 },
         { type: 'gradient', from: 0xe07a5f, to: 0x3d5a80, y0: 0.55 },
-        { type: 'disc', x: 0.5, y: 0.52, r: 4, bg: 0xffd27f, glow: 0xffb36b },
+        { type: 'disc', x: 0.88, y: 0.52, r: 4, bg: 0xffd27f, glow: 0xffb36b },
         { type: 'waves', glyphs: '~-', from: 0xffc49b, to: 0x6d87a8, fx: 0.45, fy: 1.1, speed: 1.6, threshold: 1.0, y0: 0.57, y1: 0.9 },
         { type: 'ground', rows: 3, from: 0xe9c89a, to: 0xf3dcb4, glyphs: '.,', fg: 0xc9a06b, density: 0.2 },
         { type: 'sprites', speed: 3, dir: -1, count: 3, bob: 1, fps: 3, y0: 0.08, y1: 0.4, items: [{ color: 0x3b2a4f, frames: [['\\v/'], ['-v-']] }] },
@@ -225,7 +225,7 @@
       layers: [
         { type: 'gradient', from: 0x1a0b2e, to: 0x3a1236 },
         { type: 'stars', density: 0.015, glyphs: '.·', from: 0x302048, to: 0xffe9c0 },
-        { type: 'disc', x: 0.75, y: 0.22, r: 4.5, bg: 0xffe7a3, glow: 0x5a3050 },
+        { type: 'disc', x: 0.9, y: 0.18, r: 4.5, bg: 0xffe7a3, glow: 0x5a3050 },
         { type: 'sprites', mode: 'rise', count: 5, speed: 1.1, sway: 2, items: [lantern(0xff7a3d), lantern(0xffb03b), lantern(0xff4f5e)] },
         { type: 'particles', density: 0.4, glyphs: ['·', '*'], colors: [0xffcf7a], dim: 0x3a1236, pulse: 3, vy: -1.5, wobble: 1 },
       ],

@@ -30,12 +30,67 @@
     return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55;
   };
 
-  function veil() {
-    const c = scanner?.pageColor ?? CS.Scanner.initialPageColor() ?? (CS.pageIsDark() ? { r: 38, g: 38, b: 36 } : { r: 250, g: 249, b: 245 });
-    // A dark scene under a light page (or a light one under a dark page) turns the
-    // page muddy, so the veil gets strong enough to keep text readable.
-    const mismatch = !!CS.themeById(settings.theme)?.dark !== CS.pageIsDark();
-    return { color: `rgb(${c.r}, ${c.g}, ${c.b})`, alpha: mismatch ? Math.max(settings.dim, 0.78) : settings.dim };
+  // Text must stay readable on every scene in both page modes. From one rendered frame
+  // (sampled small), find the lightest veil, never below the user's Dim, that gives the
+  // page's text 7:1 against 98% of the pixels. The same is tried with the canvas shown
+  // inverted and its hues turned back (a night sky becomes a pale day sky); whichever
+  // needs less veil wins, so the scene keeps as much of itself as it can. A night scene
+  // on a light page (or a day scene on a dark one) leans to inverting: at about the same
+  // veil, a heavy veil over the wrong sky reads as muddy gray.
+  const TARGET = 7, COVER = 0.98, MAX_VEIL = 0.92;
+  let probe = null;
+
+  const linear = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  const lum = (r, g, b) => 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+
+  function pageColor() {
+    return scanner?.pageColor ?? CS.Scanner.initialPageColor() ?? (CS.pageIsDark() ? { r: 38, g: 38, b: 36 } : { r: 250, g: 249, b: 245 });
+  }
+
+  function sceneSample() {
+    probe ??= Object.assign(document.createElement('canvas'), { width: 96, height: 60 });
+    const ctx = probe.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(canvas, 0, 0, probe.width, probe.height);
+    return ctx.getImageData(0, 0, probe.width, probe.height).data;
+  }
+
+  // The smallest veil alpha that makes `text` readable over `px` mixed with `veilRgb`.
+  function neededVeil(px, veilRgb, text, invert) {
+    const tl = lum(text.r, text.g, text.b);
+    const ok = (a) => {
+      let good = 0, n = 0;
+      for (let i = 0; i < px.length; i += 4, n++) {
+        const ch = (k) => { const s = invert ? 255 - px[i + k] : px[i + k]; return s * (1 - a) + veilRgb[k] * a; };
+        const bl = lum(ch(0), ch(1), ch(2));
+        if ((Math.max(bl, tl) + 0.05) / (Math.min(bl, tl) + 0.05) >= TARGET) good++;
+      }
+      return good / n >= COVER;
+    };
+    let lo = settings.dim, hi = MAX_VEIL;
+    if (ok(lo)) return lo;
+    if (!ok(hi)) return hi;
+    for (let k = 0; k < 10; k++) { const mid = (lo + hi) / 2; if (ok(mid)) hi = mid; else lo = mid; }
+    return hi;
+  }
+
+  function fitVeil() {
+    const theme = CS.themeById(settings.theme);
+    const page = pageColor();
+    const text = CS.parseColor(getComputedStyle(document.body).color) ?? (CS.pageIsDark() ? { r: 245, g: 244, b: 239 } : { r: 20, g: 20, b: 19 });
+    renderer.veil = null;
+    canvas.style.filter = '';
+    const sample = (flipped) => { renderer.flipped = flipped; renderer.frame(theme, clock || 10); return sceneSample(); };
+    const rgb = [page.r, page.g, page.b];
+    const plain = neededVeil(sample(false), rgb, text, false);
+    const inverted = neededVeil(sample(true), rgb, text, true);
+    const mismatched = theme.dark !== (lum(page.r, page.g, page.b) < 0.2);
+    const invert = mismatched ? inverted <= plain + 0.05 : inverted < plain - 0.05;
+    // the veil is painted before the CSS filter, so an inverted canvas gets an inverted veil
+    const v = invert ? rgb.map((c) => 255 - c) : rgb;
+    canvas.style.filter = invert ? 'invert(1) hue-rotate(180deg)' : '';
+    renderer.flipped = invert;
+    renderer.veil = { color: `rgb(${v[0]}, ${v[1]}, ${v[2]})`, alpha: invert ? inverted : plain };
+    canvas.dataset.veil = `${invert ? 'inverted' : 'plain'} ${plain.toFixed(2)} ${inverted.toFixed(2)}`;
   }
 
   function loop(now) {
@@ -50,7 +105,7 @@
     cancelAnimationFrame(raf);
     raf = 0;
     if (!settings.enabled || !renderer) return;
-    renderer.veil = veil();
+    fitVeil();
     if (reduceMotion.matches || document.hidden || settings.speed === 0) {
       renderer.frame(CS.themeById(settings.theme), clock || 10);
       return;
