@@ -1,0 +1,33 @@
+/* Injected by the manifest, so it is not blocked by the page's CSP. Every rule
+   is scoped to html[data-chatscape], which the content script sets only while
+   the wallpaper is on; turning it off restores the page as it was. */
+
+html[data-chatscape],
+html[data-chatscape] body {
+  background: transparent !important;
+}
+
+html[data-chatscape] [data-chatscape-clear] {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-chatscape] [data-chatscape-glass] {
+  background-color: rgba(var(--chatscape-rgb), var(--chatscape-glass, 0.72)) !important;
+  backdrop-filter: blur(var(--chatscape-blur, 12px)) !important;
+  -webkit-backdrop-filter: blur(var(--chatscape-blur, 12px)) !important;
+}
+
+#chatscape-canvas {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: -1 !important;
+  pointer-events: none !important;
+  display: block !important;
+}
+
+html:not([data-chatscape]) #chatscape-canvas {
+  display: none !important;
+}
