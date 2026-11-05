@@ -8,7 +8,8 @@
 <title>ChatGPT</title>
 <style>
 :root[data-mode="dark"] { --main: #212121; --side: #181818; --text: #ececec; --muted: #9b9b9b; --input: #303030; }
-:root[data-mode="light"] { --main: #ffffff; --side: #f9f9f9; --text: #0d0d0d; --muted: #5d5d5d; --input: #ffffff; }
+/* like chatgpt.com, light mode computes to oklch(), not rgb() */
+:root[data-mode="light"] { --main: oklch(0.991069 0 none); --side: #f9f9f9; --text: oklch(0.159066 0 none); --muted: #5d5d5d; --input: #ffffff; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body { background: var(--main); color: var(--text); font: 16px/1.6 system-ui, sans-serif; display: flex; overflow: hidden; }

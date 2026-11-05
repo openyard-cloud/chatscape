@@ -23,11 +23,12 @@
   const isOurs = (node) => node === canvas || !!picker?.contains(node);
 
   // The page's own mode, read from its text colour: light text = dark page.
+  // (Read through parseColor: ChatGPT's light mode gives oklch(0.159 0 none), whose
+  // digits read as rgb would say "light text".)
   CS.pageIsDark = () => {
-    const color = getComputedStyle(document.body).color.match(/\d+/g);
+    const color = CS.parseColor(getComputedStyle(document.body).color);
     if (!color) return false;
-    const [r, g, b] = color.map(Number);
-    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55;
+    return (0.299 * color.r + 0.587 * color.g + 0.114 * color.b) / 255 > 0.55;
   };
 
   // Text must stay readable on every scene in both page modes. From a few rendered frames
