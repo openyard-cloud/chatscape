@@ -23,6 +23,11 @@ html[data-chatscape] [data-chatscape-glass][data-chatscape-solid] {
   background-color: rgba(var(--chatscape-rgb), 0.94) !important;
 }
 
+/* solid "shadows" that act as surfaces (see scanner.js) */
+html[data-chatscape] [data-chatscape-noshadow] {
+  box-shadow: none !important;
+}
+
 #chatscape-canvas {
   position: fixed !important;
   inset: 0 !important;
