@@ -1,7 +1,7 @@
 // Can a person still read the chat? Every check here measures a screenshot, in both page
 // modes, with a dark scene (Code Rain) and a light one (Cloud Drift).
 import { test, expect } from './extension';
-import { brightness, textContrast, variation } from './helpers';
+import { brightness, textContrast, variation, worstContrast } from './helpers';
 
 const SCENES = [
   { id: 'code-rain', name: 'Code Rain' },
@@ -31,6 +31,21 @@ test('no solid band is painted around the composer', async ({ settle, open }) =>
   expect(await variation(page, band)).toBeGreaterThan((await variation(page, scene)) * 0.25);
   expect(await brightness(page, band)).toBeLessThan(0.97);
 });
+
+for (const mode of ['light', 'dark'] as const) {
+  test(`${mode} page: the composer's dock is not a flat slab, the composer itself is glass`, async ({ settle, open }) => {
+    await settle({ theme: 'meteor-shower', matchMode: false });
+    const page = await open('claude', mode);
+    await expect(page.locator('#footer')).not.toHaveAttribute('data-chatscape-glass', /.*/);
+    await expect(page.locator('#composer')).toHaveAttribute('data-chatscape-glass', '');
+    // the strip under the composer, where the hint sits, shows the scene, not a flat fill
+    const hint = (await page.locator('#footer .hint').boundingBox())!;
+    const strip = { x: hint.x + hint.width * 0.7, y: hint.y, width: hint.width * 0.28, height: hint.height };
+    const scene = { x: strip.x, y: strip.y - 260, width: strip.width, height: strip.height };
+    expect(await variation(page, strip)).toBeGreaterThan((await variation(page, scene)) * 0.25);
+    expect(await worstContrast(page, '#footer .hint')).toBeGreaterThan(4.5);
+  });
+}
 
 for (const mode of ['light', 'dark'] as const) {
   test(`${mode} page: an open Settings dialog is solid and the page behind it is dimmed`, async ({ settle, open }) => {

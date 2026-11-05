@@ -3,6 +3,8 @@
      It reproduces what has broken Chatscape before, not claude.ai's exact markup:
      - colours that compute to color(srgb ...) (color-mix), next to plain rgb()
      - a 32px solid box-shadow ring under the composer that hides scrolled messages
+     - a square, page-coloured dock around the banner, composer and hint (claude.ai's
+       in-data-cds-dock-masked:bg-page), which must not turn into a gray slab
      - a decorative full-page grid layer with pointer-events: none
      - a large Settings dialog over a dark backdrop
      - light and dark modes switched live through html[data-mode]
@@ -32,7 +34,7 @@ header { position: relative; height: 48px; display: flex; align-items: center; p
 table { border-collapse: collapse; width: 100%; margin: 12px 0; }
 td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }
 .bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 20px 12px; }
-.footer { max-width: 768px; margin: 0 auto; box-shadow: 0 0 0 32px var(--bg-100); background: var(--bg-100); border-radius: 18px; }
+.footer { max-width: 768px; margin: 0 auto; box-shadow: 0 0 0 32px var(--bg-100); background: var(--bg-100); }
 .banner { padding: 12px 16px; border-radius: 14px 14px 0 0; background: var(--bg-200); font-size: 15px; }
 .composer { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--composer); border-radius: 16px; box-shadow: 0 0 0 1px var(--line), 0 4px 20px color-mix(in srgb, black 4%, transparent); }
 .composer [contenteditable] { flex: 1; outline: none; min-height: 24px; }

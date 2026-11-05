@@ -18,6 +18,11 @@ html[data-chatscape] [data-chatscape-glass] {
   -webkit-backdrop-filter: blur(var(--chatscape-blur, 12px)) !important;
 }
 
+/* a page-coloured strip around the composer, now clear: keep its loose text readable */
+html[data-chatscape] [data-chatscape-mask] {
+  text-shadow: 0 0 3px rgb(var(--chatscape-rgb)), 0 0 8px rgb(var(--chatscape-rgb)), 0 0 14px rgb(var(--chatscape-rgb)) !important;
+}
+
 /* modal panels: nearly solid, so nothing behind them mixes with their text */
 html[data-chatscape] [data-chatscape-glass][data-chatscape-solid] {
   background-color: rgba(var(--chatscape-rgb), 0.94) !important;

@@ -10,6 +10,7 @@
   const GLASS = 'data-chatscape-glass';
   const SOLID = 'data-chatscape-solid';
   const NOSHADOW = 'data-chatscape-noshadow';
+  const MASK = 'data-chatscape-mask';
   const DIALOG = '[role="dialog"], [role="alertdialog"], dialog, [aria-modal="true"]';
   const MIN_GLASS_AREA = 1600;
   const CLEAR_RATIO = 0.3;
@@ -54,10 +55,30 @@
     return false;
   }
 
+  const near = (a, b) => !!a && !!b && Math.abs(a.r - b.r) + Math.abs(a.g - b.g) + Math.abs(a.b - b.b) <= 12;
+
+  // claude.ai docks its composer in a square strip painted with the page colour, to
+  // hide messages scrolling under it. Made frosted, that strip reads as a flat gray
+  // slab around the rounded composer. An element painted the colour of what is behind
+  // it, that mostly holds a surface of another colour, is such a strip: it goes clear and the surface inside
+  // becomes the glass.
+  function isMask(el, color, behind, area) {
+    if (!near(color, behind)) return false;
+    const inner = el.getElementsByTagName('*');
+    for (let i = 0; i < inner.length && i < 400; i++) {
+      const c = parseColor(getComputedStyle(inner[i]).backgroundColor);
+      if (!c || c.a < 0.5 || near(c, color)) continue;
+      const r = inner[i].getBoundingClientRect();
+      if (r.width * r.height >= area * 0.3) return true;
+    }
+    return false;
+  }
+
   class Scanner {
     constructor(skip) {
       this.skip = skip;
       this.pageColor = null;
+      this.painted = new WeakMap(); // the colour each changed element had, since ours now hides it
       this.observer = new MutationObserver((list) => this.queue(list));
       this.pending = new Set();
       this.timer = 0;
@@ -76,11 +97,21 @@
       clearTimeout(this.timer);
       for (const el of document.querySelectorAll(`[${CLEAR}], [${GLASS}], [${NOSHADOW}]`)) {
         el.removeAttribute(CLEAR);
+        el.removeAttribute(MASK);
         el.removeAttribute(GLASS);
         el.removeAttribute(SOLID);
         el.removeAttribute(NOSHADOW);
         el.style.removeProperty('--chatscape-rgb');
       }
+    }
+
+    // The colour painted behind an element: its nearest ancestor with a background.
+    behind(el) {
+      for (let p = el.parentElement; p; p = p.parentElement) {
+        const c = this.painted.get(p) ?? parseColor(getComputedStyle(p).backgroundColor);
+        if (c && c.a >= 0.5) return c;
+      }
+      return this.pageColor;
     }
 
     queue(list) {
@@ -106,6 +137,7 @@
         if (!color || color.a < 0.5) continue;
         const rect = el.getBoundingClientRect();
         const area = rect.width * rect.height;
+        this.painted.set(el, color);
         const dialog = el.closest(DIALOG);
         // A modal's own surface stays a near-solid panel however large it is,
         // so the page behind it does not show through and mix with its text.
@@ -122,6 +154,12 @@
           // for the veil that keeps text readable over the wallpaper.
           if (!this.pageColor) this.pageColor = color;
           el.setAttribute(CLEAR, '');
+        } else if (isMask(el, color, this.behind(el), area)) {
+          // its loose text (a disclaimer under the composer) gets a soft halo in the
+          // strip's colour, since the strip no longer sits behind it
+          el.style.setProperty('--chatscape-rgb', `${color.r}, ${color.g}, ${color.b}`);
+          el.setAttribute(CLEAR, '');
+          el.setAttribute(MASK, '');
         } else if (style.pointerEvents === 'none' || el.parentElement?.closest(`[${GLASS}]`)) {
           // Decorative overlays (fades, scrims) and panels inside a frosted panel
           // would stack into a dark block, so they go clear instead.
