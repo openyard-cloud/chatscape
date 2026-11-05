@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- A stand-in for chatgpt.com, served at https://chatgpt.com/* by the tests. It keeps the
+     patterns that turned into dark blocks before: a sidebar made of two nested opaque
+     panels, and decorative overlays (pointer-events: none) painted with color(srgb ... / 0.8). -->
+<html lang="en" data-mode="dark">
+<head>
+<meta charset="utf-8">
+<title>ChatGPT</title>
+<style>
+:root[data-mode="dark"] { --main: #212121; --side: #181818; --text: #ececec; --muted: #9b9b9b; --input: #303030; }
+:root[data-mode="light"] { --main: #ffffff; --side: #f9f9f9; --text: #0d0d0d; --muted: #5d5d5d; --input: #ffffff; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--main); color: var(--text); font: 16px/1.6 system-ui, sans-serif; display: flex; overflow: hidden; }
+aside { width: 260px; flex: none; background: var(--side); }
+aside > div { height: 100%; background: var(--side); padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+aside a { color: var(--text); text-decoration: none; padding: 6px 8px; border-radius: 8px; }
+main { position: relative; flex: 1; background: var(--main); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.fade { position: absolute; left: 0; right: 0; height: 22%; pointer-events: none; background: color-mix(in srgb, var(--main) 80%, transparent); }
+.fade.top { top: 0; } .fade.mid { top: 36%; }
+h1 { position: relative; font-weight: 500; font-size: 28px; }
+p { position: relative; max-width: 640px; padding: 0 20px; }
+.box { position: relative; width: 640px; display: flex; gap: 10px; padding: 14px 18px; border-radius: 28px; background: var(--input); }
+#prompt-textarea { flex: 1; outline: none; min-height: 24px; }
+#sent { display: none; }
+</style>
+</head>
+<body>
+<aside id="sidebar"><div>
+  <a href="#">New chat</a><a href="#">Images</a><a href="#" id="sidebar-text">Trip to Da Lat ideas</a><a href="#">Recipes for the week</a>
+</div></aside>
+<main>
+  <div class="fade top"></div><div class="fade mid"></div>
+  <h1>Where should we begin?</h1>
+  <p id="answer-text">Here is a slow weekend that leaves room to rest. Arrive Friday evening and walk around the lake while the market opens. On Saturday take the early cable car and have lunch near the gardens, then spend the afternoon in a café looking over the pine hills.</p>
+  <div class="box"><span>+</span><div contenteditable="true" id="prompt-textarea" role="textbox" aria-label="Ask ChatGPT"></div></div>
+</main>
+<ul id="sent"></ul>
+<script>
+  const editor = document.getElementById('prompt-textarea');
+  editor.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || e.shiftKey) return;
+    e.preventDefault();
+    const text = editor.innerText.trim();
+    if (!text) return;
+    const li = document.createElement('li');
+    li.textContent = text;
+    document.getElementById('sent').append(li);
+    editor.textContent = '';
+  });
+  const mode = new URLSearchParams(location.search).get('mode');
+  if (mode) document.documentElement.setAttribute('data-mode', mode);
+</script>
+</body>
+</html>
