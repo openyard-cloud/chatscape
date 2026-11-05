@@ -9,7 +9,7 @@
     :host { all: initial; }
     .panel {
       position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%);
-      width: min(720px, calc(100vw - 32px)); max-height: min(560px, calc(100vh - 140px));
+      width: min(720px, calc(100vw - 32px)); max-height: min(640px, calc(100vh - 120px));
       display: flex; flex-direction: column; gap: 12px; padding: 16px;
       box-sizing: border-box; border-radius: 16px; overflow: hidden;
       font: 13px/1.4 system-ui, -apple-system, Segoe UI, sans-serif;
@@ -25,7 +25,7 @@
     .group { grid-column: 1 / -1; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.6; margin-top: 4px; }
     .card { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 4px; border-radius: 10px; padding: 4px; border: 2px solid transparent; }
     .card canvas { width: 100%; aspect-ratio: 2 / 1; border-radius: 7px; display: block; }
-    .card span { font-size: 12px; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card span { font-size: 12px; line-height: 1.3; padding: 0 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .card.current { border-color: #d97757; }
     .card:focus-visible, .card.sel { outline: 2px solid #4a90d9; outline-offset: 1px; }
     .controls { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; }
@@ -34,7 +34,7 @@
     input[type=checkbox] { margin: 0; accent-color: #d97757; }
     button.plain { all: unset; cursor: pointer; padding: 4px 10px; border-radius: 8px; border: 1px solid currentColor; opacity: 0.8; }
     button.plain:hover { opacity: 1; }
-    .hint { font-size: 11px; opacity: 0.6; }
+    .hint { font-size: 11px; opacity: 0.72; }
     .hint.warn { opacity: 1; color: #e8590c; font-weight: 600; }
   `;
 

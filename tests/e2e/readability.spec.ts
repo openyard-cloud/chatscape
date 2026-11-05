@@ -32,6 +32,29 @@ test('no solid band is painted around the composer', async ({ settle, open }) =>
   expect(await brightness(page, band)).toBeLessThan(0.97);
 });
 
+for (const site of ['claude', 'chatgpt'] as const) {
+  test(`${site}: the veil is strongest behind the conversation, the scene keeps its colour beside it`, async ({ settle, open }) => {
+    await settle({ theme: 'snowfall' });
+    const page = await open(site, 'dark');
+    const lane = (await page.locator('#chatscape-canvas').getAttribute('data-lane'))!.split(' ').map(Number);
+    expect(lane).toHaveLength(2);
+    // how far the canvas is from the page colour (what the veil mixes in), in a
+    // text-free band, inside the lane and beside it
+    const page_ = site === 'claude' ? [0x1f, 0x1e, 0x1d] : [0x21, 0x21, 0x21];
+    const spread = (x0: number, x1: number) => page.evaluate(([a, b, p]) => {
+      const c = document.getElementById('chatscape-canvas') as HTMLCanvasElement;
+      const k = c.width / innerWidth;
+      const d = c.getContext('2d')!.getImageData(Math.round(a * k), Math.round(innerHeight * 0.62 * k), Math.round((b - a) * k), 40).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += Math.abs(d[i] - p[0]) + Math.abs(d[i + 1] - p[1]) + Math.abs(d[i + 2] - p[2]);
+      return sum / (d.length / 4);
+    }, [x0, x1, page_] as [number, number, number[]]);
+    const inLane = await spread(lane[0] + 60, lane[1] - 60);
+    const beside = await spread(lane[1] + 100, Math.min(lane[1] + 200, 1440));
+    expect(beside).toBeGreaterThan(inLane * 1.6);
+  });
+}
+
 for (const mode of ['light', 'dark'] as const) {
   test(`${mode} page: the composer's dock is not a flat slab, the composer itself is glass`, async ({ settle, open }) => {
     await settle({ theme: 'meteor-shower', matchMode: false });

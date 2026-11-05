@@ -65,3 +65,23 @@ test('with "Page follows scene" off, the page keeps its mode', async ({ settle, 
   await picker(page).getByRole('checkbox', { name: 'Page follows scene' }).uncheck();
   await expect(html(page)).toHaveAttribute('data-mode', 'light');
 });
+
+test('switching to a dark scene never shows light glass under the new light text', async ({ settle, open }) => {
+  await settle({ theme: 'sakura' });
+  const page = await open('claude', 'light');
+  await send(page, '#editor', '/chatscape');
+  // record every frame for a second while the page goes dark
+  const frames = page.evaluate(() => new Promise<{ text: number; glass: number }[]>((done) => {
+    const out: { text: number; glass: number }[] = [];
+    const t0 = performance.now();
+    const light = (c: string) => { const [r, g, b] = c.match(/[\d.]+/g)!.map(Number); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
+    const tick = () => {
+      out.push({ text: light(getComputedStyle(document.body).color), glass: light(getComputedStyle(document.querySelector('nav')!).backgroundColor) });
+      if (performance.now() - t0 < 1500) requestAnimationFrame(tick); else done(out);
+    };
+    requestAnimationFrame(tick);
+  }));
+  await picker(page).getByRole('option', { name: 'Aurora' }).click();
+  const bad = (await frames).filter((f) => f.text > 0.55 && f.glass > 0.55);
+  expect(bad, 'frames with light text on light glass').toHaveLength(0);
+});

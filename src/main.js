@@ -30,14 +30,18 @@
     return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55;
   };
 
-  // Text must stay readable on every scene in both page modes. From one rendered frame
+  // Text must stay readable on every scene in both page modes. From a few rendered frames
   // (sampled small), find the lightest veil, never below the user's Dim, that gives the
   // page's text 7:1 against 98% of the pixels. The same is tried with the canvas shown
   // inverted and its hues turned back (a night sky becomes a pale day sky); whichever
   // needs less veil wins, so the scene keeps as much of itself as it can. A night scene
   // on a light page (or a day scene on a dark one) leans to inverting: at about the same
   // veil, a heavy veil over the wrong sky reads as muddy gray.
-  const TARGET = 7, COVER = 0.98, MAX_VEIL = 0.92;
+  // The veil is only that strong in the reading lane, the column the conversation sits
+  // in; it fades out towards the sides, where there is little text (the sidebar has its
+  // own glass), so the scene keeps its colour there.
+  const TARGET = 7, COVER = 0.98, MAX_VEIL = 0.92, FEATHER = 96, SIDE = 0.35;
+  const SAMPLE_W = 96, SAMPLE_H = 60;
   let probe = null;
 
   const linear = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
@@ -47,22 +51,51 @@
     return scanner?.pageColor ?? CS.Scanner.initialPageColor() ?? (CS.pageIsDark() ? { r: 38, g: 38, b: 36 } : { r: 250, g: 249, b: 245 });
   }
 
+  // The conversation column, found from the chat box: its first ancestor at least 480px
+  // wide (claude.ai and ChatGPT both size the box to the column). Null when the column
+  // takes most of the window anyway (a narrow window), so the veil is even.
+  function readingLane() {
+    const editor = document.querySelector('#prompt-textarea, [contenteditable="true"], textarea');
+    let box = null;
+    for (let el = editor; el && el !== document.body; el = el.parentElement) {
+      if (picker.contains(el)) break;
+      const r = el.getBoundingClientRect();
+      if (r.width >= 480) { box = r; break; }
+    }
+    if (!box) return null;
+    const x0 = Math.max(0, box.left - 40), x1 = Math.min(innerWidth, box.right + 40);
+    if (x1 - x0 > innerWidth * 0.75) return null;
+    // a tall panel along the left edge (the sidebar) also hides the scene
+    let left = 0;
+    for (const el of document.querySelectorAll('nav, aside')) {
+      const r = el.getBoundingClientRect();
+      if (r.left < 8 && r.height > innerHeight * 0.6 && r.width < innerWidth * 0.4 && r.right < x0) left = Math.max(left, r.right);
+    }
+    return { x0, x1, left };
+  }
+
   function sceneSample() {
-    probe ??= Object.assign(document.createElement('canvas'), { width: 96, height: 60 });
+    probe ??= Object.assign(document.createElement('canvas'), { width: SAMPLE_W, height: SAMPLE_H });
     const ctx = probe.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(canvas, 0, 0, probe.width, probe.height);
     return ctx.getImageData(0, 0, probe.width, probe.height).data;
   }
 
-  // The smallest veil alpha that makes `text` readable over `px` mixed with `veilRgb`.
-  function neededVeil(px, veilRgb, text, invert) {
+  // The smallest veil alpha that makes `text` readable over the sampled frames mixed
+  // with `veilRgb`, counting only sample columns c0..c1.
+  function neededVeil(frames, veilRgb, text, invert, c0 = 0, c1 = SAMPLE_W - 1) {
     const tl = lum(text.r, text.g, text.b);
     const ok = (a) => {
       let good = 0, n = 0;
-      for (let i = 0; i < px.length; i += 4, n++) {
-        const ch = (k) => { const s = invert ? 255 - px[i + k] : px[i + k]; return s * (1 - a) + veilRgb[k] * a; };
-        const bl = lum(ch(0), ch(1), ch(2));
-        if ((Math.max(bl, tl) + 0.05) / (Math.min(bl, tl) + 0.05) >= TARGET) good++;
+      for (const px of frames) {
+        for (let i = 0; i < px.length; i += 4) {
+          const col = (i / 4) % SAMPLE_W;
+          if (col < c0 || col > c1) continue;
+          n++;
+          const ch = (k) => { const s = invert ? 255 - px[i + k] : px[i + k]; return s * (1 - a) + veilRgb[k] * a; };
+          const bl = lum(ch(0), ch(1), ch(2));
+          if ((Math.max(bl, tl) + 0.05) / (Math.min(bl, tl) + 0.05) >= TARGET) good++;
+        }
       }
       return good / n >= COVER;
     };
@@ -73,24 +106,51 @@
     return hi;
   }
 
+  let lane = null;
+  function laneFor(alpha) {
+    if (!lane) return null;
+    return { ...lane, feather: FEATHER, outer: Math.min(alpha, settings.dim + (alpha - settings.dim) * SIDE) };
+  }
+
   function fitVeil() {
     const theme = CS.themeById(settings.theme);
     const page = pageColor();
     const text = CS.parseColor(getComputedStyle(document.body).color) ?? (CS.pageIsDark() ? { r: 245, g: 244, b: 239 } : { r: 20, g: 20, b: 19 });
     renderer.veil = null;
     canvas.style.filter = '';
-    const sample = (flipped) => { renderer.flipped = flipped; renderer.frame(theme, clock || 10); return sceneSample(); };
+    lane = readingLane();
+    renderer.lane = lane;
+    // a few moments of the scene, so a moon or a meteor drifting into the lane later is counted
+    const base = clock || 10;
+    const sample = (flipped) => {
+      renderer.flipped = flipped;
+      return [0, 7, 19].map((dt) => { renderer.frame(theme, base + dt); return sceneSample(); });
+    };
+    const c0 = lane ? Math.floor((lane.x0 / innerWidth) * SAMPLE_W) : 0;
+    const c1 = lane ? Math.ceil((lane.x1 / innerWidth) * SAMPLE_W) : SAMPLE_W - 1;
     const rgb = [page.r, page.g, page.b];
-    const plain = neededVeil(sample(false), rgb, text, false);
-    const inverted = neededVeil(sample(true), rgb, text, true);
+    const plain = neededVeil(sample(false), rgb, text, false, c0, c1);
+    const inverted = neededVeil(sample(true), rgb, text, true, c0, c1);
     const mismatched = theme.dark !== (lum(page.r, page.g, page.b) < 0.2);
     const invert = mismatched ? inverted <= plain + 0.05 : inverted < plain - 0.05;
     // the veil is painted before the CSS filter, so an inverted canvas gets an inverted veil
     const v = invert ? rgb.map((c) => 255 - c) : rgb;
+    const alpha = invert ? inverted : plain;
     canvas.style.filter = invert ? 'invert(1) hue-rotate(180deg)' : '';
     renderer.flipped = invert;
-    renderer.veil = { color: `rgb(${v[0]}, ${v[1]}, ${v[2]})`, alpha: invert ? inverted : plain };
+    renderer.veil = { color: `rgb(${v[0]}, ${v[1]}, ${v[2]})`, rgb: v, alpha, lane: laneFor(alpha) };
     canvas.dataset.veil = `${invert ? 'inverted' : 'plain'} ${plain.toFixed(2)} ${inverted.toFixed(2)}`;
+    canvas.dataset.lane = lane ? `${Math.round(lane.x0)} ${Math.round(lane.x1)}` : '';
+  }
+
+  // The column can move without a resize (the sidebar opens or closes): follow it.
+  let laneCheck = 0;
+  function followLane(now) {
+    if (now - laneCheck < 1000 || !renderer?.veil) return;
+    laneCheck = now;
+    const next = readingLane();
+    const moved = !next !== !lane || (next && (Math.abs(next.x0 - lane.x0) > 8 || Math.abs(next.x1 - lane.x1) > 8));
+    if (moved) fitVeil();
   }
 
   function loop(now) {
@@ -98,6 +158,7 @@
     if (now - last < FRAME_MS) return;
     clock += ((now - (last || now)) / 1000) * settings.speed;
     last = now;
+    followLane(now);
     renderer.frame(CS.themeById(settings.theme), clock);
   }
 
@@ -348,7 +409,13 @@
     if (!settings.matchMode) return restorePageMode();
     const before = CS.pageIsDark();
     setPageMode(!!CS.themeById(settings.theme).dark);
-    if (CS.pageIsDark() !== before) restartSoon();
+    if (CS.pageIsDark() === before) return;
+    // re-read the page's colours now, so the glass never shows old colours under new
+    // text, and once more after the page has faded to its new mode
+    dark = !before;
+    restart();
+    picker.syncMode();
+    restartSoon();
   }
 
   // Did a change on <html> come from the site switching its own mode?

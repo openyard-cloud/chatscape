@@ -148,10 +148,22 @@
     disc(g, t, L) {
       const keep = (c) => (c === undefined || !g.flipped ? c : flipLightness(c));
       const fg = keep(L.fg ?? L.bg), bg = keep(L.bg), glow = keep(L.glow);
-      const cx = L.x * g.w;
+      let cx = L.x * g.w;
       const cy = L.y * g.h;
       const R = L.r;
       const reach = L.glow !== undefined ? R * 1.8 : R;
+      // Keep the disc out of the reading lane and from under the sidebar: move it to the
+      // middle of the free side it was on, or the other one, when it fits there (its
+      // glow may spill over).
+      if (g.lane) {
+        const [l0, l1, side] = g.lane;
+        const half = R * ASPECT + 1;
+        if ((cx + half > l0 && cx - half < l1) || cx - half < side) {
+          const right = g.w - l1 >= 2 * half, left = l0 - side >= 2 * half;
+          if (right && (L.x >= 0.5 || !left)) cx = (l1 + g.w) / 2;
+          else if (left) cx = (side + l0) / 2;
+        }
+      }
       for (let y = Math.floor(cy - reach); y <= cy + reach; y++) {
         for (let x = Math.floor(cx - reach * ASPECT); x <= cx + reach * ASPECT; x++) {
           const d = Math.hypot((x - cx) / ASPECT, y - cy);
@@ -388,6 +400,7 @@
         seed();
         st.last = t;
       }
+      if (t < st.last) st.last = t; // the clock went back (a few frames sampled ahead)
       if (t - st.last > (L.step ?? 0.25)) {
         st.last = t;
         const next = new Uint8Array(n);
@@ -432,6 +445,7 @@
       this.states = new Map();
       this.veil = null;
       this.flipped = false; // set when the canvas is shown through an invert filter
+      this.lane = null; // { x0, x1 } in CSS px: the conversation column, kept clear of suns and moons
       this.resize();
     }
 
@@ -473,6 +487,7 @@
       const g = this.grid;
       g.reset();
       g.flipped = this.flipped;
+      g.lane = this.lane ? [Math.floor(this.lane.x0 / this.cw), Math.ceil(this.lane.x1 / this.cw), Math.ceil((this.lane.left ?? 0) / this.cw)] : null;
       for (const layer of theme.layers) LAYERS[layer.type](g, t, layer, this.state(layer));
       this.draw();
     }
@@ -504,9 +519,28 @@
           ctx.fillText(String.fromCharCode(g.ch[i]), (i % g.w) * cw + cw / 2, Math.floor(i / g.w) * chH + chH / 2);
         }
       }
-      if (this.veil && this.veil.alpha > 0) {
-        ctx.fillStyle = this.veil.color;
-        ctx.globalAlpha = this.veil.alpha;
+      const veil = this.veil;
+      if (veil && veil.alpha > 0) {
+        // With a reading lane, the veil is full only behind the text column and
+        // fades to `outer` at the sides, where the scene can show itself.
+        if (veil.lane && veil.lane.outer < veil.alpha) {
+          const { x0, x1, feather, outer } = veil.lane;
+          const w = this.width;
+          const [r, gr, b] = veil.rgb;
+          const at = (x) => Math.min(1, Math.max(0, x / w));
+          const grad = ctx.createLinearGradient(0, 0, w, 0);
+          const o = `rgba(${r}, ${gr}, ${b}, ${outer})`, f = `rgba(${r}, ${gr}, ${b}, ${veil.alpha})`;
+          grad.addColorStop(0, x0 - feather > 0 ? o : f);
+          grad.addColorStop(at(x0 - feather), o);
+          grad.addColorStop(at(x0), f);
+          grad.addColorStop(at(x1), f);
+          grad.addColorStop(at(x1 + feather), o);
+          grad.addColorStop(1, x1 + feather < w ? o : f);
+          ctx.fillStyle = grad;
+        } else {
+          ctx.fillStyle = veil.color;
+          ctx.globalAlpha = veil.alpha;
+        }
         ctx.fillRect(0, 0, this.width, this.height);
         ctx.globalAlpha = 1;
       }
