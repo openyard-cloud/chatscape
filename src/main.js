@@ -7,7 +7,7 @@
   if (CS.started) return;
   CS.started = true;
 
-  const DEFAULTS = { enabled: true, theme: 'cloud-drift', dim: 0.35, glass: 0.72, speed: 1 };
+  const DEFAULTS = { enabled: true, theme: 'cloud-drift', dim: 0.35, glass: 0.72, speed: 1, matchMode: true };
   const FRAME_MS = 1000 / 30;
   const COMMAND = '/chatscape';
 
@@ -150,8 +150,16 @@
   function apply(next) {
     const before = settings;
     settings = { ...settings, ...next };
-    if (settings.enabled && !before.enabled) enable();
-    else if (!settings.enabled && before.enabled) disable();
+    if (settings.enabled && !before.enabled) {
+      matchScene();
+      enable();
+    } else if (!settings.enabled && before.enabled) {
+      disable();
+      restorePageMode();
+      picker.syncMode();
+    } else if (settings.enabled && (settings.theme !== before.theme || settings.matchMode !== before.matchMode)) {
+      matchScene();
+    }
     if (!settings.enabled) return;
     applyGlass();
     startLoop();
@@ -269,26 +277,137 @@
     apply(next);
   });
 
+  // A light scene puts the page in light mode and a dark scene in dark mode, so the
+  // scene is shown as it is, not darkened or turned inside out to keep text readable.
+  // claude.ai keeps its mode in html[data-mode]; ChatGPT in classes on <html> that
+  // switch CSS variables (--lightningcss-light/-dark, older builds: .dark/.light).
+  // Nothing is saved to the site: turning Chatscape off puts back what was there.
+  // If the person (or the site) changes the mode by hand, that choice wins until the
+  // next scene is picked; the veil then keeps the text readable as before.
+  const html = document.documentElement;
+  const STYLE_KEYS = ['color-scheme', '--lightningcss-light', '--lightningcss-dark'];
+  let forced = null; // { dark, own, mode, classes, style }
+
+  function writeMode(isDark) {
+    const want = isDark ? 'dark' : 'light', other = isDark ? 'light' : 'dark';
+    if (html.hasAttribute('data-mode')) html.setAttribute('data-mode', want);
+    if (html.classList.contains(other) || html.classList.contains(want)) {
+      html.classList.remove(other);
+      html.classList.add(want);
+    }
+    html.style.setProperty('color-scheme', want, 'important');
+    html.style.setProperty('--lightningcss-light', isDark ? ' ' : 'initial', 'important');
+    html.style.setProperty('--lightningcss-dark', isDark ? 'initial' : ' ', 'important');
+  }
+
+  function liftStyle() {
+    for (const [key, value, priority] of forced.style) {
+      if (value) html.style.setProperty(key, value, priority);
+      else html.style.removeProperty(key);
+    }
+  }
+
+  function setPageMode(isDark) {
+    if (!forced) {
+      forced = {
+        own: CS.pageIsDark(),
+        mode: html.getAttribute('data-mode'),
+        classes: ['dark', 'light'].filter((c) => html.classList.contains(c)),
+        style: STYLE_KEYS.map((k) => [k, html.style.getPropertyValue(k), html.style.getPropertyPriority(k)]),
+      };
+    }
+    forced.dark = isDark;
+    writeMode(isDark);
+    modeObserver.takeRecords();
+  }
+
+  // Put back the page's own mode, as it was before the first scene was matched.
+  function restorePageMode() {
+    if (!forced) return;
+    if (forced.mode === null) html.removeAttribute('data-mode');
+    else html.setAttribute('data-mode', forced.mode);
+    if (forced.classes.length || html.classList.contains('dark') || html.classList.contains('light')) {
+      html.classList.remove('dark', 'light');
+      html.classList.add(...forced.classes);
+    }
+    liftStyle();
+    forced = null;
+    modeObserver.takeRecords();
+    restartSoon();
+  }
+
+  // The site changed its mode itself: keep its choice, drop only what we added.
+  function release() {
+    liftStyle();
+    forced = null;
+    modeObserver.takeRecords();
+  }
+
+  function matchScene() {
+    if (!settings.enabled) return;
+    if (!settings.matchMode) return restorePageMode();
+    const before = CS.pageIsDark();
+    setPageMode(!!CS.themeById(settings.theme).dark);
+    if (CS.pageIsDark() !== before) restartSoon();
+  }
+
+  // Did a change on <html> come from the site switching its own mode?
+  function siteChangedMode(records) {
+    const want = forced.dark ? 'dark' : 'light';
+    for (const r of records) {
+      if (r.target !== html) continue;
+      if (r.attributeName === 'data-mode' && html.getAttribute('data-mode') !== want) return true;
+      if (r.attributeName !== 'class' || r.oldValue === html.className) continue;
+      if (html.classList.contains(forced.dark ? 'light' : 'dark')) return true;
+      // ChatGPT's mode classes have generated names: lift our override for a moment
+      // and see which mode the page asks for now.
+      liftStyle();
+      const own = CS.pageIsDark();
+      writeMode(forced.dark);
+      if (own !== forced.own) return true;
+    }
+    return false;
+  }
+
   // claude.ai and ChatGPT switch between light and dark without a reload. When
   // the page's mode flips, start over so the glass and the veil read the new colours.
+  // (A page fades between modes, so wait for that before reading colours.)
   let dark = null, modeTimer = 0;
+  function restart() {
+    if (!settings.enabled) return;
+    disable();
+    enable();
+  }
   function checkMode() {
     const now = CS.pageIsDark();
-    if (dark !== null && now !== dark && settings.enabled) {
-      disable();
-      enable();
-    }
+    if (dark !== null && now !== dark) restart();
     dark = now;
+    picker.syncMode();
+  }
+  function restartSoon() {
+    clearTimeout(modeTimer);
+    modeTimer = setTimeout(() => {
+      dark = CS.pageIsDark();
+      restart();
+      picker.syncMode();
+    }, 350);
   }
   const soon = () => { clearTimeout(modeTimer); modeTimer = setTimeout(checkMode, 150); };
-  const modeObserver = new MutationObserver(soon);
-  modeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-mode', 'data-theme', 'style'] });
+  const modeObserver = new MutationObserver((records) => {
+    if (forced && siteChangedMode(records)) release();
+    modeObserver.takeRecords();
+    soon();
+  });
+  modeObserver.observe(html, { attributes: true, attributeOldValue: true, attributeFilter: ['class', 'data-mode', 'data-theme', 'style'] });
   modeObserver.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-mode', 'data-theme'] });
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', soon);
 
   function boot(saved) {
     settings = { ...DEFAULTS, ...saved };
-    if (settings.enabled) enable();
+    if (settings.enabled) {
+      matchScene();
+      enable();
+    }
     dark = CS.pageIsDark();
   }
 

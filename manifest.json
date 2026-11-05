@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Chatscape: live ASCII wallpapers for Claude and ChatGPT",
   "short_name": "Chatscape",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Animated ASCII and pixel scenes behind your claude.ai and ChatGPT chat. 20 themes, no account, nothing leaves your browser.",
   "permissions": ["storage"],
   "background": { "service_worker": "background.js" },

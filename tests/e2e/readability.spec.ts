@@ -46,7 +46,7 @@ for (const mode of ['light', 'dark'] as const) {
 }
 
 test('switching claude.ai from light to dark recolours the glass without a reload', async ({ settle, open }) => {
-  await settle({ theme: 'code-rain' });
+  await settle({ theme: 'code-rain', matchMode: false });
   const page = await open('claude', 'light');
   await page.locator('#open-settings').click();
   await page.locator('#mode-dark').click();

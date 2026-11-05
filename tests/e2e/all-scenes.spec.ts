@@ -16,7 +16,7 @@ test.describe.configure({ mode: 'parallel' });
 for (const theme of THEMES) {
   for (const mode of ['light', 'dark'] as const) {
     test(`${theme.name} on a ${mode} page`, async ({ settle, open }) => {
-      await settle({ theme: theme.id });
+      await settle({ theme: theme.id, matchMode: false });
       const page = await open('claude', mode);
       fs.mkdirSync(SHOTS, { recursive: true });
       await page.screenshot({ path: path.join(SHOTS, `${theme.id}-${mode}.png`) });

@@ -31,6 +31,7 @@
     .controls { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; }
     label { display: flex; align-items: center; gap: 8px; }
     input[type=range] { width: 110px; accent-color: #d97757; }
+    input[type=checkbox] { margin: 0; accent-color: #d97757; }
     button.plain { all: unset; cursor: pointer; padding: 4px 10px; border-radius: 8px; border: 1px solid currentColor; opacity: 0.8; }
     button.plain:hover { opacity: 1; }
     .hint { font-size: 11px; opacity: 0.6; }
@@ -80,6 +81,7 @@
       this.isOpen = false;
       clearInterval(this.thumbTimer);
       this.host.remove();
+      this.panel = null;
     }
 
     build() {
@@ -94,10 +96,12 @@
       this.cards = [];
       const thumbs = [];
       const grid = el('div', { className: 'grid', role: 'listbox', 'aria-label': 'Themes' });
+      // light scenes first, then dark ones, each in library order
       let group = null;
-      for (const theme of CS.THEMES) {
-        if (theme.group !== group) {
-          group = theme.group;
+      for (const theme of [...CS.THEMES.filter((t) => !t.dark), ...CS.THEMES.filter((t) => t.dark)]) {
+        const name = theme.dark ? 'Dark' : 'Light';
+        if (name !== group) {
+          group = name;
           grid.append(el('div', { className: 'group', text: group }));
         }
         const canvas = el('canvas');
@@ -147,18 +151,30 @@
         },
       });
 
-      const panel = el('div', { className: 'panel' + (isDark ? ' dark' : ''), role: 'dialog', 'aria-label': 'Chatscape themes' }, [
+      const matchBox = el('input', {
+        type: 'checkbox',
+        onchange: (e) => this.onChange({ matchMode: e.target.checked }),
+      });
+      matchBox.checked = settings.matchMode !== false;
+
+      const panel = (this.panel = el('div', { className: 'panel' + (isDark ? ' dark' : ''), role: 'dialog', 'aria-label': 'Chatscape themes' }, [
         el('header', {}, [el('h1', { text: 'Chatscape' }), toggleButton, el('button', { className: 'plain', text: 'Close', onclick: () => this.close() })]),
         grid,
         el('div', { className: 'controls' }, [
           slider('Dim', 'dim', 0, 0.8, 0.05),
           slider('Glass', 'glass', 0.3, 1, 0.02),
           slider('Speed', 'speed', 0, 2, 0.1),
+          el('label', { title: 'A light scene puts the page in light mode, a dark scene in dark mode' }, [matchBox, 'Page follows scene']),
           (this.hint = el('span', { className: 'hint', text: `Arrows to move, Enter to pick, Esc to close. Open with /chatscape or ${/Mac|iPhone|iPad/.test(navigator.platform) ? '⌥ Option+Shift+T' : 'Alt+Shift+T'}.` })),
         ]),
-      ]);
+      ]));
       panel.addEventListener('keydown', (e) => this.onKey(e));
       root.append(panel);
+    }
+
+    // The panel follows the page's mode, which can change when a scene is picked.
+    syncMode() {
+      this.panel?.classList.toggle('dark', CS.pageIsDark?.() ?? false);
     }
 
     // Replaces the hint with a message that matters more, like a tab that needs a reload.
