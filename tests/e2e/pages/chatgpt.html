@@ -12,6 +12,8 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body { background: var(--main); color: var(--text); font: 16px/1.6 system-ui, sans-serif; display: flex; overflow: hidden; }
+/* like the real sites, the page fades between modes */
+body, main, aside, aside > div, nav, header, .box, .composer, .footer, .hint, .banner { transition: background-color .3s, color .3s; }
 aside { width: 260px; flex: none; background: var(--side); }
 aside > div { height: 100%; background: var(--side); padding: 16px; display: flex; flex-direction: column; gap: 8px; }
 aside a { color: var(--text); text-decoration: none; padding: 6px 8px; border-radius: 8px; }

@@ -85,3 +85,20 @@ test('switching to a dark scene never shows light glass under the new light text
   const bad = (await frames).filter((f) => f.text > 0.55 && f.glass > 0.55);
   expect(bad, 'frames with light text on light glass').toHaveLength(0);
 });
+
+test("claude.ai's inner mode roots follow the scene too, also ones mounted later", async ({ settle, open }) => {
+  await settle({ theme: 'aurora' });
+  const page = await open('claude', 'light');
+  await expect(page.locator('nav')).toHaveAttribute('data-mode', 'dark');
+  await expect(page.locator('main')).toHaveAttribute('data-mode', 'dark');
+  // the app mounts its dialog from its own (light) state: it must still come up dark
+  await page.locator('#open-settings').click();
+  await expect(page.locator('#settings')).toHaveAttribute('data-mode', 'dark');
+  await page.locator('#close-settings').click();
+  expect(await textContrast(page.locator('#sidebar-text'))).toBeGreaterThan(7);
+  // turning off puts every root back
+  await send(page, '#editor', '/chatscape');
+  await picker(page).getByRole('button', { name: 'Turn off' }).click();
+  await expect(page.locator('nav')).toHaveAttribute('data-mode', 'light');
+  await expect(page.locator('main')).toHaveAttribute('data-mode', 'light');
+});

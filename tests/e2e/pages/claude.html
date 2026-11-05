@@ -7,7 +7,8 @@
        in-data-cds-dock-masked:bg-page), which must not turn into a gray slab
      - a decorative full-page grid layer with pointer-events: none
      - a large Settings dialog over a dark backdrop
-     - light and dark modes switched live through html[data-mode]
+     - light and dark modes switched live through html[data-mode], repeated like claude.ai
+       on inner roots (nav, main) and on dialogs mounted later from the app's own state
      - its own /theme command in the composer
      - Enter sends: sent messages are listed in #sent so tests can tell nothing was sent -->
 <html lang="en" data-mode="light">
@@ -15,11 +16,13 @@
 <meta charset="utf-8">
 <title>Weekend plans - Claude</title>
 <style>
-:root[data-mode="light"] { --bg-000: #ffffff; --bg-100: #faf9f5; --bg-200: #f0eee6; --text-000: #141413; --text-300: #5e5d59; --line: rgba(0,0,0,.08); --composer: #ffffff; }
-:root[data-mode="dark"] { --bg-000: #262624; --bg-100: #1f1e1d; --bg-200: #30302e; --text-000: #f5f4ef; --text-300: #a6a39b; --line: rgba(255,255,255,.1); --composer: #30302e; }
+[data-mode="light"] { --bg-000: #ffffff; --bg-100: #faf9f5; --bg-200: #f0eee6; --text-000: #141413; --text-300: #5e5d59; --line: rgba(0,0,0,.08); --composer: #ffffff; }
+[data-mode="dark"] { --bg-000: #262624; --bg-100: #1f1e1d; --bg-200: #30302e; --text-000: #f5f4ef; --text-300: #a6a39b; --line: rgba(255,255,255,.1); --composer: #30302e; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body { background: var(--bg-000); color: var(--text-000); font: 16px/1.6 -apple-system, system-ui, sans-serif; display: flex; overflow: hidden; }
+/* like the real sites, the page fades between modes */
+body, main, aside, aside > div, nav, header, .box, .composer, .footer, .hint, .banner { transition: background-color .3s, color .3s; }
 nav { width: 280px; flex: none; background: var(--bg-200); padding: 18px; display: flex; flex-direction: column; gap: 6px; }
 nav b { font-size: 20px; margin-bottom: 14px; }
 nav a { padding: 6px 10px; border-radius: 8px; color: var(--text-000); text-decoration: none; font-size: 15px; }
@@ -39,14 +42,15 @@ td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: lef
 .composer { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--composer); border-radius: 16px; box-shadow: 0 0 0 1px var(--line), 0 4px 20px color-mix(in srgb, black 4%, transparent); }
 .composer [contenteditable] { flex: 1; outline: none; min-height: 24px; }
 .composer [contenteditable]:empty::before { content: "Write a message…"; color: var(--text-300); }
-.hint { text-align: center; color: var(--text-300); font-size: 13px; padding-top: 8px; }
+.hint { text-align: center; color: var(--text-300); font-size: 13px; padding-top: 8px; background: var(--bg-100); } /* claude.ai's disclaimer "chin": painted with the page colour too */
 .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5); }
+[data-mode] { color: var(--text-000); }
 .dialog { position: fixed; top: 6vh; left: 10vw; width: 80vw; height: 84vh; background: var(--bg-000); border-radius: 16px; padding: 28px; }
 #sent { display: none; }
 </style>
 </head>
 <body>
-<nav>
+<nav data-mode="light" class="cds-root">
   <b>Claude</b>
   <a href="#">New chat</a>
   <a href="#" class="on">Weekend plans</a>
@@ -55,7 +59,7 @@ td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: lef
   <a href="#" id="sidebar-text">Reading list for the trip</a>
   <button id="open-settings" type="button">Settings</button>
 </nav>
-<main>
+<main data-mode="light" class="cds-root">
   <div class="grid"></div>
   <header><span>Weekend plans</span></header>
   <div class="scroll">
@@ -84,7 +88,7 @@ td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: lef
 <!-- like claude.ai, the dialog is added to the page when opened and removed when closed -->
 <template id="settings-tpl">
   <div class="backdrop" id="backdrop"></div>
-  <div class="dialog" role="dialog" aria-label="Settings" id="settings">
+  <div class="dialog cds-root" role="dialog" aria-label="Settings" id="settings" data-mode="light">
     <h2>Settings</h2>
     <p id="settings-text">Appearance. Choose how Claude looks to you. Select a single theme, or sync with your system and automatically switch between day and night themes.</p>
     <p><button type="button" id="mode-light">Light</button> <button type="button" id="mode-dark">Dark</button> <button type="button" id="close-settings">Close</button></p>
@@ -93,7 +97,13 @@ td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: lef
 <ul id="sent"></ul>
 <script>
   const editor = document.getElementById('editor');
-  const setMode = (m) => document.documentElement.setAttribute('data-mode', m);
+  // the app's own idea of the mode, written to <html> and every inner root, like React
+  let state = 'light';
+  const setMode = (m) => {
+    state = m;
+    document.documentElement.setAttribute('data-mode', m);
+    for (const el of document.querySelectorAll('.cds-root')) el.setAttribute('data-mode', m);
+  };
   editor.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' || e.shiftKey) return;
     e.preventDefault();
@@ -102,7 +112,7 @@ td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: lef
     // claude.ai's own slash command: /theme light|dark (bare /theme flips the mode)
     if (text.startsWith('/theme')) {
       const arg = text.split(/\s+/)[1];
-      setMode(arg === 'light' || arg === 'dark' ? arg : document.documentElement.dataset.mode === 'dark' ? 'light' : 'dark');
+      setMode(arg === 'light' || arg === 'dark' ? arg : state === 'dark' ? 'light' : 'dark');
     } else {
       const li = document.createElement('li');
       li.textContent = text;
@@ -111,7 +121,9 @@ td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: lef
     editor.textContent = '';
   });
   document.getElementById('open-settings').onclick = () => {
-    document.body.append(document.getElementById('settings-tpl').content.cloneNode(true));
+    const tpl = document.getElementById('settings-tpl').content.cloneNode(true);
+    tpl.querySelector('.cds-root').setAttribute('data-mode', state); // mounted from the app's state
+    document.body.append(tpl);
     document.getElementById('mode-light').onclick = () => setMode('light');
     document.getElementById('mode-dark').onclick = () => setMode('dark');
     document.getElementById('close-settings').onclick = () => { document.getElementById('settings').remove(); document.getElementById('backdrop').remove(); };

@@ -154,7 +154,9 @@
           // for the veil that keeps text readable over the wallpaper.
           if (!this.pageColor) this.pageColor = color;
           el.setAttribute(CLEAR, '');
-        } else if (isMask(el, color, this.behind(el), area)) {
+        } else if (isMask(el, color, this.behind(el), area) || (el.parentElement?.closest(`[${MASK}]`) && near(color, this.behind(el)))) {
+          // (a page-coloured row inside such a strip, like claude.ai's disclaimer
+          // "chin" under the composer, is part of the strip)
           // its loose text (a disclaimer under the composer) gets a soft halo in the
           // strip's colour, since the strip no longer sits behind it
           el.style.setProperty('--chatscape-rgb', `${color.r}, ${color.g}, ${color.b}`);

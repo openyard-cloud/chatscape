@@ -18,6 +18,14 @@ html[data-chatscape] [data-chatscape-glass] {
   -webkit-backdrop-filter: blur(var(--chatscape-blur, 12px)) !important;
 }
 
+/* while a scene switches the page's mode: no fading, so the new colours can be read at once */
+html[data-chatscape-switching],
+html[data-chatscape-switching] *,
+html[data-chatscape-switching] *::before,
+html[data-chatscape-switching] *::after {
+  transition: none !important;
+}
+
 /* a page-coloured strip around the composer, now clear: keep its loose text readable */
 html[data-chatscape] [data-chatscape-mask] {
   text-shadow: 0 0 3px rgb(var(--chatscape-rgb)), 0 0 8px rgb(var(--chatscape-rgb)), 0 0 14px rgb(var(--chatscape-rgb)) !important;

@@ -349,9 +349,30 @@
   const STYLE_KEYS = ['color-scheme', '--lightningcss-light', '--lightningcss-dark'];
   let forced = null; // { dark, own, mode, classes, style }
 
+  // claude.ai repeats data-mode="dark|light" on inner roots (the app frame, the
+  // sidebar, popovers mounted later); each of those is switched too, and remembered so
+  // turning off can put its own value back. (Other data-mode values, like "cowork", are
+  // not a colour mode and are left alone.)
+  const INNER = '[data-mode="dark"], [data-mode="light"]';
+  const innerOwn = new Map();
+  function writeInner(root, want) {
+    const list = root.querySelectorAll ? [...root.querySelectorAll(INNER)] : [];
+    if (root.matches?.(INNER)) list.push(root);
+    for (const el of list) {
+      if (el === html || picker.contains(el) || el.getAttribute('data-mode') === want) continue;
+      if (!innerOwn.has(el)) innerOwn.set(el, el.getAttribute('data-mode'));
+      el.setAttribute('data-mode', want);
+    }
+  }
+  function restoreInner() {
+    for (const [el, value] of innerOwn) if (el.isConnected) el.setAttribute('data-mode', value);
+    innerOwn.clear();
+  }
+
   function writeMode(isDark) {
     const want = isDark ? 'dark' : 'light', other = isDark ? 'light' : 'dark';
     if (html.hasAttribute('data-mode')) html.setAttribute('data-mode', want);
+    writeInner(document, want);
     if (html.classList.contains(other) || html.classList.contains(want)) {
       html.classList.remove(other);
       html.classList.add(want);
@@ -392,30 +413,53 @@
       html.classList.add(...forced.classes);
     }
     liftStyle();
+    restoreInner();
     forced = null;
     modeObserver.takeRecords();
+    innerObserver.takeRecords();
     restartSoon();
   }
 
   // The site changed its mode itself: keep its choice, drop only what we added.
   function release() {
     liftStyle();
+    innerOwn.clear();
     forced = null;
     modeObserver.takeRecords();
+  }
+
+  // Runs `fn` with the page's transitions off, then turns them back on two frames later.
+  function instantly(fn) {
+    html.setAttribute('data-chatscape-switching', '');
+    try {
+      fn();
+    } finally {
+      modeObserver.takeRecords();
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        html.removeAttribute('data-chatscape-switching');
+        modeObserver.takeRecords();
+      }));
+    }
   }
 
   function matchScene() {
     if (!settings.enabled) return;
     if (!settings.matchMode) return restorePageMode();
-    const before = CS.pageIsDark();
-    setPageMode(!!CS.themeById(settings.theme).dark);
-    if (CS.pageIsDark() === before) return;
-    // re-read the page's colours now, so the glass never shows old colours under new
-    // text, and once more after the page has faded to its new mode
-    dark = !before;
-    restart();
-    picker.syncMode();
-    restartSoon();
+    // Pages fade between modes (ChatGPT's background does); with transitions off for
+    // the switch, the new colours can be read at once, so the glass and the veil never
+    // pair old colours with new text. They are read once more a moment later, in case
+    // the page re-renders anything.
+    let changed = false;
+    instantly(() => {
+      const before = CS.pageIsDark();
+      setPageMode(!!CS.themeById(settings.theme).dark);
+      changed = CS.pageIsDark() !== before;
+      if (!changed) return;
+      dark = !before;
+      restart();
+      picker.syncMode();
+    });
+    if (changed) restartSoon();
   }
 
   // Did a change on <html> come from the site switching its own mode?
@@ -445,15 +489,26 @@
     disable();
     enable();
   }
+  let lastText = '';
   function checkMode() {
-    const now = CS.pageIsDark();
-    if (dark !== null && now !== dark) restart();
-    dark = now;
+    // Only when the page's text colour moved (the cheap check) ...
+    const text = getComputedStyle(document.body).color;
+    if (text === lastText && dark !== null) return picker.syncMode();
+    lastText = text;
+    // ... it may be fading to its new mode: finish the fade at once, then see which
+    // mode it is in and read its colours.
+    instantly(() => {
+      const now = CS.pageIsDark();
+      if (dark !== null && now !== dark) restart();
+      dark = now;
+      lastText = getComputedStyle(document.body).color;
+    });
     picker.syncMode();
   }
+  let restartTimer = 0;
   function restartSoon() {
-    clearTimeout(modeTimer);
-    modeTimer = setTimeout(() => {
+    clearTimeout(restartTimer);
+    restartTimer = setTimeout(() => {
       dark = CS.pageIsDark();
       restart();
       picker.syncMode();
@@ -468,6 +523,17 @@
   modeObserver.observe(html, { attributes: true, attributeOldValue: true, attributeFilter: ['class', 'data-mode', 'data-theme', 'style'] });
   modeObserver.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-mode', 'data-theme'] });
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', soon);
+  // Inner roots that mount later, or that the app re-renders, take the scene's mode too.
+  const innerObserver = new MutationObserver((records) => {
+    if (!forced) return;
+    const want = forced.dark ? 'dark' : 'light';
+    for (const r of records) {
+      if (r.type === 'attributes') writeInner(r.target, want);
+      else for (const node of r.addedNodes) if (node.nodeType === 1) writeInner(node, want);
+    }
+    innerObserver.takeRecords();
+  });
+  innerObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-mode'] });
 
   function boot(saved) {
     settings = { ...DEFAULTS, ...saved };
