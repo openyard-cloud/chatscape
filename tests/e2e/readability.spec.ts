@@ -102,3 +102,36 @@ for (const mode of ['dark', 'light'] as const) {
     expect(await textContrast(page.locator('#sidebar-text'))).toBeGreaterThan(7);
   });
 }
+
+for (const scene of ['sakura', 'aurora'] as const) {
+  test(`chatgpt.com log-in dialog stays solid (${scene})`, async ({ settle, open }) => {
+    await settle({ theme: scene });
+    const page = await open('chatgpt', 'dark');
+    await page.locator('#login').click();
+    const panel = page.locator('dialog.auth section'); // (it may go clear on the dialog's solid glass)
+    await page.waitForTimeout(1000);
+    for (const wait of [0, 4500]) {
+      await page.waitForTimeout(wait); // and again after the scanner's next sweep
+      // nothing in the dialog is taken for a page-coloured strip around the composer ...
+      await expect(page.locator('dialog.auth')).not.toHaveAttribute('data-chatscape-mask', /.*/);
+      await expect(panel).not.toHaveAttribute('data-chatscape-mask', /.*/);
+      // ... and its surface stays (nearly) opaque, so the page does not show through
+      const alpha = await page.locator('dialog.auth').evaluate((el) => {
+        const c = getComputedStyle(el).backgroundColor;
+        return c.startsWith('rgba') ? Number(c.match(/([\d.]+)\s*\)$/)![1]) : 1;
+      });
+      expect(alpha).toBeGreaterThan(0.9);
+      expect(await textContrast(page.locator('#auth-text'))).toBeGreaterThan(7);
+    }
+  });
+}
+
+for (const mode of ['light', 'dark'] as const) {
+  test(`${mode} page: a primary button in a dialog keeps its own fill`, async ({ settle, open }) => {
+    await settle({ theme: mode === 'light' ? 'sakura' : 'aurora' });
+    const page = await open('claude', mode);
+    await page.locator('#open-settings').click();
+    await page.waitForTimeout(800);
+    expect(await textContrast(page.locator('#copy-link'))).toBeGreaterThan(4.5);
+  });
+}

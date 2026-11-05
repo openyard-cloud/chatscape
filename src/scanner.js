@@ -154,9 +154,11 @@
           // for the veil that keeps text readable over the wallpaper.
           if (!this.pageColor) this.pageColor = color;
           el.setAttribute(CLEAR, '');
-        } else if (isMask(el, color, this.behind(el), area) || (el.parentElement?.closest(`[${MASK}]`) && near(color, this.behind(el)))) {
+        } else if (!dialog && area >= MIN_GLASS_AREA && (isMask(el, color, this.behind(el), area) || (el.parentElement?.closest(`[${MASK}]`) && near(color, this.behind(el))))) {
           // (a page-coloured row inside such a strip, like claude.ai's disclaimer
-          // "chin" under the composer, is part of the strip)
+          // "chin" under the composer, is part of the strip; nothing inside a modal
+          // is a strip: ChatGPT's white log-in dialog on a white page holds a black
+          // button, and is still tiny while it zooms in)
           // its loose text (a disclaimer under the composer) gets a soft halo in the
           // strip's colour, since the strip no longer sits behind it
           el.style.setProperty('--chatscape-rgb', `${color.r}, ${color.g}, ${color.b}`);
@@ -164,8 +166,11 @@
           el.setAttribute(MASK, '');
         } else if (style.pointerEvents === 'none' || el.parentElement?.closest(`[${GLASS}]`)) {
           // Decorative overlays (fades, scrims) and panels inside a frosted panel
-          // would stack into a dark block, so they go clear instead.
-          el.setAttribute(CLEAR, '');
+          // would stack into a dark block, so they go clear instead, when they are
+          // painted like what is behind them. A surface of its own colour, like the
+          // dark fill of claude.ai's "Copy link" button (a pointer-events: none span
+          // under white text), stays as it is.
+          if (near(color, this.behind(el))) el.setAttribute(CLEAR, '');
         } else if (area >= MIN_GLASS_AREA) {
           el.style.setProperty('--chatscape-rgb', `${color.r}, ${color.g}, ${color.b}`);
           el.setAttribute(GLASS, '');

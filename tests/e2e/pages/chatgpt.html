@@ -26,12 +26,23 @@ p { position: relative; max-width: 640px; padding: 0 20px; }
 .box { position: relative; width: 640px; display: flex; gap: 10px; padding: 14px 18px; border-radius: 28px; background: var(--input); }
 #prompt-textarea { flex: 1; outline: none; min-height: 24px; }
 #sent { display: none; }
+/* the log-in dialog: a page-coloured panel holding a black button, added when opened and
+   growing from nearly nothing while its contents are full size, so Chatscape first sees
+   a tiny panel mostly covered by the button */
+#login { position: fixed; z-index: 10; top: 4px; right: 12px; padding: 8px 14px; border-radius: 99px; border: 0; background: #0d0d0d; color: #fff; }
+dialog.auth { border: 0; padding: 0; background: var(--main); border-radius: 16px; overflow: hidden; animation: open 1s ease-out; }
+dialog.auth::backdrop { background: rgba(0, 0, 0, .2); }
+dialog.auth section { width: 448px; padding: 40px; border-radius: 16px; background: var(--main); color: var(--text); text-align: center; }
+dialog.auth input { width: 100%; padding: 12px; border-radius: 99px; border: 1px solid var(--muted); background: var(--main); color: var(--text); box-sizing: border-box; }
+dialog.auth .go { display: block; width: 100%; margin-top: 12px; padding: 14px; border-radius: 99px; border: 0; background: #0d0d0d; color: #fff; font-size: 16px; }
+@keyframes open { 0%, 45% { max-height: 2px; } 100% { max-height: 600px; } }
 </style>
 </head>
 <body>
 <aside id="sidebar"><div>
   <a href="#">New chat</a><a href="#">Images</a><a href="#" id="sidebar-text">Trip to Da Lat ideas</a><a href="#">Recipes for the week</a>
 </div></aside>
+<button type="button" id="login">Log in</button>
 <main>
   <div class="fade top"></div><div class="fade mid"></div>
   <h1>Where should we begin?</h1>
@@ -51,6 +62,14 @@ p { position: relative; max-width: 640px; padding: 0 20px; }
     document.getElementById('sent').append(li);
     editor.textContent = '';
   });
+  document.getElementById('login').onclick = () => {
+    const d = document.createElement('dialog');
+    d.className = 'auth';
+    d.setAttribute('role', 'dialog');
+    d.innerHTML = '<section><h2 id="auth-title">Log in or sign up</h2><p id="auth-text">You will get smarter responses and can upload files, images, and more.</p><input placeholder="Email address" aria-label="Email address"><button type="button" class="go">Continue</button></section>';
+    document.body.append(d);
+    d.showModal();
+  };
   const mode = new URLSearchParams(location.search).get('mode');
   if (mode) document.documentElement.setAttribute('data-mode', mode);
 </script>
