@@ -144,4 +144,5 @@
   };
 
   CS.Scanner = Scanner;
+  CS.parseColor = parseColor;
 })();
