@@ -7,11 +7,16 @@
 <meta charset="utf-8">
 <title>ChatGPT</title>
 <style>
-:root[data-mode="dark"] { --main: #212121; --side: #181818; --text: #ececec; --muted: #9b9b9b; --input: #303030; }
-:root[data-mode="light"] { --main: #ffffff; --side: #f9f9f9; --text: #0d0d0d; --muted: #5d5d5d; --input: #ffffff; }
+/* signed out the mode is a class/attribute toggle; signed in (?signed=1) it is
+   html[data-theme="dark|light"], next to non-mode attributes like data-appearance-preset */
+:root[data-mode="dark"], :root[data-theme="dark"] { --main: #212121; --side: #181818; --text: #ececec; --muted: #9b9b9b; --input: #303030; }
+/* like chatgpt.com, light mode computes to oklch(), not rgb() */
+:root[data-mode="light"], :root[data-theme="light"] { --main: oklch(0.991069 0 none); --side: #f9f9f9; --text: oklch(0.159066 0 none); --muted: #5d5d5d; --input: #ffffff; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body { background: var(--main); color: var(--text); font: 16px/1.6 system-ui, sans-serif; display: flex; overflow: hidden; }
+/* like the real sites, the page fades between modes */
+body, main, aside, aside > div, nav, header, .box, .composer, .footer, .hint, .banner { transition: background-color .3s, color .3s; }
 aside { width: 260px; flex: none; background: var(--side); }
 aside > div { height: 100%; background: var(--side); padding: 16px; display: flex; flex-direction: column; gap: 8px; }
 aside a { color: var(--text); text-decoration: none; padding: 6px 8px; border-radius: 8px; }
@@ -23,12 +28,23 @@ p { position: relative; max-width: 640px; padding: 0 20px; }
 .box { position: relative; width: 640px; display: flex; gap: 10px; padding: 14px 18px; border-radius: 28px; background: var(--input); }
 #prompt-textarea { flex: 1; outline: none; min-height: 24px; }
 #sent { display: none; }
+/* the log-in dialog: a page-coloured panel holding a black button, added when opened and
+   growing from nearly nothing while its contents are full size, so Chatscape first sees
+   a tiny panel mostly covered by the button */
+#login { position: fixed; z-index: 10; top: 4px; right: 12px; padding: 8px 14px; border-radius: 99px; border: 0; background: #0d0d0d; color: #fff; }
+dialog.auth { border: 0; padding: 0; background: var(--main); border-radius: 16px; overflow: hidden; animation: open 1s ease-out; }
+dialog.auth::backdrop { background: rgba(0, 0, 0, .2); }
+dialog.auth section { width: 448px; padding: 40px; border-radius: 16px; background: var(--main); color: var(--text); text-align: center; }
+dialog.auth input { width: 100%; padding: 12px; border-radius: 99px; border: 1px solid var(--muted); background: var(--main); color: var(--text); box-sizing: border-box; }
+dialog.auth .go { display: block; width: 100%; margin-top: 12px; padding: 14px; border-radius: 99px; border: 0; background: #0d0d0d; color: #fff; font-size: 16px; }
+@keyframes open { 0%, 45% { max-height: 2px; } 100% { max-height: 600px; } }
 </style>
 </head>
 <body>
 <aside id="sidebar"><div>
   <a href="#">New chat</a><a href="#">Images</a><a href="#" id="sidebar-text">Trip to Da Lat ideas</a><a href="#">Recipes for the week</a>
 </div></aside>
+<button type="button" id="login">Log in</button>
 <main>
   <div class="fade top"></div><div class="fade mid"></div>
   <h1>Where should we begin?</h1>
@@ -48,8 +64,31 @@ p { position: relative; max-width: 640px; padding: 0 20px; }
     document.getElementById('sent').append(li);
     editor.textContent = '';
   });
-  const mode = new URLSearchParams(location.search).get('mode');
-  if (mode) document.documentElement.setAttribute('data-mode', mode);
+  document.getElementById('login').onclick = () => {
+    const d = document.createElement('dialog');
+    d.className = 'auth';
+    d.setAttribute('role', 'dialog');
+    d.innerHTML = '<section><h2 id="auth-title">Log in or sign up</h2><p id="auth-text">You will get smarter responses and can upload files, images, and more.</p><input placeholder="Email address" aria-label="Email address"><button type="button" class="go">Continue</button></section>';
+    document.body.append(d);
+    d.showModal();
+  };
+  const params = new URLSearchParams(location.search);
+  const mode = params.get('mode');
+  const signed = params.get('signed');
+  if (signed) {
+    const root = document.documentElement;
+    root.removeAttribute('data-mode');
+    root.setAttribute('data-appearance-preset', 'codex');
+    // 'late': the mode is only written once the app has loaded; 'again': it is in the
+    // HTML and the app writes it again once loaded (both seen on chatgpt.com)
+    if (signed !== 'late') root.setAttribute('data-theme', mode || 'dark');
+    if (signed === 'late' || signed === 'again') {
+      setTimeout(() => {
+        root.setAttribute('data-theme', mode || 'dark');
+        root.setAttribute('data-written', '1');
+      }, 1500);
+    }
+  } else if (mode) document.documentElement.setAttribute('data-mode', mode);
 </script>
 </body>
 </html>

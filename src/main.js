@@ -23,21 +23,26 @@
   const isOurs = (node) => node === canvas || !!picker?.contains(node);
 
   // The page's own mode, read from its text colour: light text = dark page.
+  // (Read through parseColor: ChatGPT's light mode gives oklch(0.159 0 none), whose
+  // digits read as rgb would say "light text".)
   CS.pageIsDark = () => {
-    const color = getComputedStyle(document.body).color.match(/\d+/g);
+    const color = CS.parseColor(getComputedStyle(document.body).color);
     if (!color) return false;
-    const [r, g, b] = color.map(Number);
-    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55;
+    return (0.299 * color.r + 0.587 * color.g + 0.114 * color.b) / 255 > 0.55;
   };
 
-  // Text must stay readable on every scene in both page modes. From one rendered frame
+  // Text must stay readable on every scene in both page modes. From a few rendered frames
   // (sampled small), find the lightest veil, never below the user's Dim, that gives the
   // page's text 7:1 against 98% of the pixels. The same is tried with the canvas shown
   // inverted and its hues turned back (a night sky becomes a pale day sky); whichever
   // needs less veil wins, so the scene keeps as much of itself as it can. A night scene
   // on a light page (or a day scene on a dark one) leans to inverting: at about the same
   // veil, a heavy veil over the wrong sky reads as muddy gray.
-  const TARGET = 7, COVER = 0.98, MAX_VEIL = 0.92;
+  // The veil is only that strong in the reading lane, the column the conversation sits
+  // in; it fades out towards the sides, where there is little text (the sidebar has its
+  // own glass), so the scene keeps its colour there.
+  const TARGET = 7, COVER = 0.98, MAX_VEIL = 0.92, FEATHER = 96, SIDE = 0.35;
+  const SAMPLE_W = 96, SAMPLE_H = 60;
   let probe = null;
 
   const linear = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
@@ -47,22 +52,51 @@
     return scanner?.pageColor ?? CS.Scanner.initialPageColor() ?? (CS.pageIsDark() ? { r: 38, g: 38, b: 36 } : { r: 250, g: 249, b: 245 });
   }
 
+  // The conversation column, found from the chat box: its first ancestor at least 480px
+  // wide (claude.ai and ChatGPT both size the box to the column). Null when the column
+  // takes most of the window anyway (a narrow window), so the veil is even.
+  function readingLane() {
+    const editor = document.querySelector('#prompt-textarea, [contenteditable="true"], textarea');
+    let box = null;
+    for (let el = editor; el && el !== document.body; el = el.parentElement) {
+      if (picker.contains(el)) break;
+      const r = el.getBoundingClientRect();
+      if (r.width >= 480) { box = r; break; }
+    }
+    if (!box) return null;
+    const x0 = Math.max(0, box.left - 40), x1 = Math.min(innerWidth, box.right + 40);
+    if (x1 - x0 > innerWidth * 0.75) return null;
+    // a tall panel along the left edge (the sidebar) also hides the scene
+    let left = 0;
+    for (const el of document.querySelectorAll('nav, aside')) {
+      const r = el.getBoundingClientRect();
+      if (r.left < 8 && r.height > innerHeight * 0.6 && r.width < innerWidth * 0.4 && r.right < x0) left = Math.max(left, r.right);
+    }
+    return { x0, x1, left };
+  }
+
   function sceneSample() {
-    probe ??= Object.assign(document.createElement('canvas'), { width: 96, height: 60 });
+    probe ??= Object.assign(document.createElement('canvas'), { width: SAMPLE_W, height: SAMPLE_H });
     const ctx = probe.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(canvas, 0, 0, probe.width, probe.height);
     return ctx.getImageData(0, 0, probe.width, probe.height).data;
   }
 
-  // The smallest veil alpha that makes `text` readable over `px` mixed with `veilRgb`.
-  function neededVeil(px, veilRgb, text, invert) {
+  // The smallest veil alpha that makes `text` readable over the sampled frames mixed
+  // with `veilRgb`, counting only sample columns c0..c1.
+  function neededVeil(frames, veilRgb, text, invert, c0 = 0, c1 = SAMPLE_W - 1) {
     const tl = lum(text.r, text.g, text.b);
     const ok = (a) => {
       let good = 0, n = 0;
-      for (let i = 0; i < px.length; i += 4, n++) {
-        const ch = (k) => { const s = invert ? 255 - px[i + k] : px[i + k]; return s * (1 - a) + veilRgb[k] * a; };
-        const bl = lum(ch(0), ch(1), ch(2));
-        if ((Math.max(bl, tl) + 0.05) / (Math.min(bl, tl) + 0.05) >= TARGET) good++;
+      for (const px of frames) {
+        for (let i = 0; i < px.length; i += 4) {
+          const col = (i / 4) % SAMPLE_W;
+          if (col < c0 || col > c1) continue;
+          n++;
+          const ch = (k) => { const s = invert ? 255 - px[i + k] : px[i + k]; return s * (1 - a) + veilRgb[k] * a; };
+          const bl = lum(ch(0), ch(1), ch(2));
+          if ((Math.max(bl, tl) + 0.05) / (Math.min(bl, tl) + 0.05) >= TARGET) good++;
+        }
       }
       return good / n >= COVER;
     };
@@ -73,24 +107,51 @@
     return hi;
   }
 
+  let lane = null;
+  function laneFor(alpha) {
+    if (!lane) return null;
+    return { ...lane, feather: FEATHER, outer: Math.min(alpha, settings.dim + (alpha - settings.dim) * SIDE) };
+  }
+
   function fitVeil() {
     const theme = CS.themeById(settings.theme);
     const page = pageColor();
     const text = CS.parseColor(getComputedStyle(document.body).color) ?? (CS.pageIsDark() ? { r: 245, g: 244, b: 239 } : { r: 20, g: 20, b: 19 });
     renderer.veil = null;
     canvas.style.filter = '';
-    const sample = (flipped) => { renderer.flipped = flipped; renderer.frame(theme, clock || 10); return sceneSample(); };
+    lane = readingLane();
+    renderer.lane = lane;
+    // a few moments of the scene, so a moon or a meteor drifting into the lane later is counted
+    const base = clock || 10;
+    const sample = (flipped) => {
+      renderer.flipped = flipped;
+      return [0, 7, 19].map((dt) => { renderer.frame(theme, base + dt); return sceneSample(); });
+    };
+    const c0 = lane ? Math.floor((lane.x0 / innerWidth) * SAMPLE_W) : 0;
+    const c1 = lane ? Math.ceil((lane.x1 / innerWidth) * SAMPLE_W) : SAMPLE_W - 1;
     const rgb = [page.r, page.g, page.b];
-    const plain = neededVeil(sample(false), rgb, text, false);
-    const inverted = neededVeil(sample(true), rgb, text, true);
+    const plain = neededVeil(sample(false), rgb, text, false, c0, c1);
+    const inverted = neededVeil(sample(true), rgb, text, true, c0, c1);
     const mismatched = theme.dark !== (lum(page.r, page.g, page.b) < 0.2);
     const invert = mismatched ? inverted <= plain + 0.05 : inverted < plain - 0.05;
     // the veil is painted before the CSS filter, so an inverted canvas gets an inverted veil
     const v = invert ? rgb.map((c) => 255 - c) : rgb;
+    const alpha = invert ? inverted : plain;
     canvas.style.filter = invert ? 'invert(1) hue-rotate(180deg)' : '';
     renderer.flipped = invert;
-    renderer.veil = { color: `rgb(${v[0]}, ${v[1]}, ${v[2]})`, alpha: invert ? inverted : plain };
+    renderer.veil = { color: `rgb(${v[0]}, ${v[1]}, ${v[2]})`, rgb: v, alpha, lane: laneFor(alpha) };
     canvas.dataset.veil = `${invert ? 'inverted' : 'plain'} ${plain.toFixed(2)} ${inverted.toFixed(2)}`;
+    canvas.dataset.lane = lane ? `${Math.round(lane.x0)} ${Math.round(lane.x1)}` : '';
+  }
+
+  // The column can move without a resize (the sidebar opens or closes): follow it.
+  let laneCheck = 0;
+  function followLane(now) {
+    if (now - laneCheck < 1000 || !renderer?.veil) return;
+    laneCheck = now;
+    const next = readingLane();
+    const moved = !next !== !lane || (next && (Math.abs(next.x0 - lane.x0) > 8 || Math.abs(next.x1 - lane.x1) > 8));
+    if (moved) fitVeil();
   }
 
   function loop(now) {
@@ -98,6 +159,7 @@
     if (now - last < FRAME_MS) return;
     clock += ((now - (last || now)) / 1000) * settings.speed;
     last = now;
+    followLane(now);
     renderer.frame(CS.themeById(settings.theme), clock);
   }
 
@@ -245,6 +307,14 @@
         picker.toggle();
         return;
       }
+      // Esc closes the picker first. Sites listen for Esc on the document to
+      // close their own menus and dialogs, which would close the one behind it.
+      if (e.key === 'Escape' && picker.isOpen && !e.isComposing) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        picker.close();
+        return;
+      }
       if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
       const editor = editorOf(e.target);
       if (!editor || picker.contains(editor)) return;
@@ -279,18 +349,42 @@
 
   // A light scene puts the page in light mode and a dark scene in dark mode, so the
   // scene is shown as it is, not darkened or turned inside out to keep text readable.
-  // claude.ai keeps its mode in html[data-mode]; ChatGPT in classes on <html> that
-  // switch CSS variables (--lightningcss-light/-dark, older builds: .dark/.light).
+  // claude.ai keeps its mode in html[data-mode]; ChatGPT in html[data-theme] when
+  // signed in, and in classes on <html> that switch CSS variables when signed out
+  // (--lightningcss-light/-dark, older builds: .dark/.light).
   // Nothing is saved to the site: turning Chatscape off puts back what was there.
   // If the person (or the site) changes the mode by hand, that choice wins until the
   // next scene is picked; the veil then keeps the text readable as before.
   const html = document.documentElement;
   const STYLE_KEYS = ['color-scheme', '--lightningcss-light', '--lightningcss-dark'];
-  let forced = null; // { dark, own, mode, classes, style }
+  const MODE_ATTRS = ['data-mode', 'data-theme'];
+  const isMode = (value) => value === 'dark' || value === 'light';
+  let forced = null; // { dark, own, attrs, classes, style }
+
+  // claude.ai repeats data-mode="dark|light" on inner roots (the app frame, the
+  // sidebar, popovers mounted later); each of those is switched too, and remembered so
+  // turning off can put its own value back. (Other data-mode values, like "cowork", are
+  // not a colour mode and are left alone.)
+  const INNER = '[data-mode="dark"], [data-mode="light"]';
+  const innerOwn = new Map();
+  function writeInner(root, want) {
+    const list = root.querySelectorAll ? [...root.querySelectorAll(INNER)] : [];
+    if (root.matches?.(INNER)) list.push(root);
+    for (const el of list) {
+      if (el === html || picker.contains(el) || el.getAttribute('data-mode') === want) continue;
+      if (!innerOwn.has(el)) innerOwn.set(el, el.getAttribute('data-mode'));
+      el.setAttribute('data-mode', want);
+    }
+  }
+  function restoreInner() {
+    for (const [el, value] of innerOwn) if (el.isConnected) el.setAttribute('data-mode', value);
+    innerOwn.clear();
+  }
 
   function writeMode(isDark) {
     const want = isDark ? 'dark' : 'light', other = isDark ? 'light' : 'dark';
-    if (html.hasAttribute('data-mode')) html.setAttribute('data-mode', want);
+    for (const name of MODE_ATTRS) if (isMode(html.getAttribute(name))) html.setAttribute(name, want);
+    writeInner(document, want);
     if (html.classList.contains(other) || html.classList.contains(want)) {
       html.classList.remove(other);
       html.classList.add(want);
@@ -311,7 +405,7 @@
     if (!forced) {
       forced = {
         own: CS.pageIsDark(),
-        mode: html.getAttribute('data-mode'),
+        attrs: MODE_ATTRS.map((name) => [name, html.getAttribute(name)]),
         classes: ['dark', 'light'].filter((c) => html.classList.contains(c)),
         style: STYLE_KEYS.map((k) => [k, html.style.getPropertyValue(k), html.style.getPropertyPriority(k)]),
       };
@@ -324,49 +418,104 @@
   // Put back the page's own mode, as it was before the first scene was matched.
   function restorePageMode() {
     if (!forced) return;
-    if (forced.mode === null) html.removeAttribute('data-mode');
-    else html.setAttribute('data-mode', forced.mode);
+    for (const [name, value] of forced.attrs) {
+      if (value === null) html.removeAttribute(name);
+      else html.setAttribute(name, value);
+    }
     if (forced.classes.length || html.classList.contains('dark') || html.classList.contains('light')) {
       html.classList.remove('dark', 'light');
       html.classList.add(...forced.classes);
     }
     liftStyle();
+    restoreInner();
     forced = null;
     modeObserver.takeRecords();
+    innerObserver.takeRecords();
     restartSoon();
   }
 
   // The site changed its mode itself: keep its choice, drop only what we added.
   function release() {
     liftStyle();
+    innerOwn.clear();
     forced = null;
     modeObserver.takeRecords();
+  }
+
+  // Runs `fn` with the page's transitions off, then turns them back on two frames later.
+  function instantly(fn) {
+    html.setAttribute('data-chatscape-switching', '');
+    try {
+      fn();
+    } finally {
+      modeObserver.takeRecords();
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        html.removeAttribute('data-chatscape-switching');
+        modeObserver.takeRecords();
+      }));
+    }
   }
 
   function matchScene() {
     if (!settings.enabled) return;
     if (!settings.matchMode) return restorePageMode();
-    const before = CS.pageIsDark();
-    setPageMode(!!CS.themeById(settings.theme).dark);
-    if (CS.pageIsDark() !== before) restartSoon();
+    // Pages fade between modes (ChatGPT's background does); with transitions off for
+    // the switch, the new colours can be read at once, so the glass and the veil never
+    // pair old colours with new text. They are read once more a moment later, in case
+    // the page re-renders anything.
+    let changed = false;
+    instantly(() => {
+      const before = CS.pageIsDark();
+      setPageMode(!!CS.themeById(settings.theme).dark);
+      changed = CS.pageIsDark() !== before;
+      if (!changed) return;
+      dark = !before;
+      restart();
+      picker.syncMode();
+    });
+    if (changed) restartSoon();
   }
 
-  // Did a change on <html> come from the site switching its own mode?
+  // When the person last clicked or pressed a key on the page (not in the picker).
+  let lastInput = -Infinity;
+  const noteInput = (e) => {
+    if (!picker.contains(e.target)) lastInput = performance.now();
+  };
+  addEventListener('pointerdown', noteInput, true);
+  addEventListener('keydown', noteInput, true);
+  const byHand = () => performance.now() - lastInput < 1500;
+
+  // Did a change on <html> come from the site switching its own mode? Returns
+  // 'release' when it did (the site's choice wins), 'rewrite' when the site only wrote
+  // its mode again (signed-in ChatGPT does once it has loaded) and the scene's mode
+  // should go back, or null.
   function siteChangedMode(records) {
     const want = forced.dark ? 'dark' : 'light';
+    let rewrite = false;
     for (const r of records) {
       if (r.target !== html) continue;
-      if (r.attributeName === 'data-mode' && html.getAttribute('data-mode') !== want) return true;
+      if (MODE_ATTRS.includes(r.attributeName)) {
+        const value = html.getAttribute(r.attributeName);
+        const entry = forced.attrs.find(([name]) => name === r.attributeName);
+        const before = entry[1];
+        entry[1] = value; // what Turn off puts back from now on
+        if (!isMode(value) || value === want) continue;
+        // A new mode, or one written right after a click or a key press (claude.ai's
+        // `/theme dark` when it was dark before the scene), is the person's choice.
+        if ((isMode(before) && value !== before) || byHand()) return 'release';
+        rewrite = true;
+        continue;
+      }
       if (r.attributeName !== 'class' || r.oldValue === html.className) continue;
-      if (html.classList.contains(forced.dark ? 'light' : 'dark')) return true;
+      if (html.classList.contains(forced.dark ? 'light' : 'dark')) return 'release';
       // ChatGPT's mode classes have generated names: lift our override for a moment
       // and see which mode the page asks for now.
       liftStyle();
       const own = CS.pageIsDark();
       writeMode(forced.dark);
-      if (own !== forced.own) return true;
+      if (own !== forced.own) return 'release';
     }
-    return false;
+    return rewrite ? 'rewrite' : null;
   }
 
   // claude.ai and ChatGPT switch between light and dark without a reload. When
@@ -378,15 +527,26 @@
     disable();
     enable();
   }
+  let lastText = '';
   function checkMode() {
-    const now = CS.pageIsDark();
-    if (dark !== null && now !== dark) restart();
-    dark = now;
+    // Only when the page's text colour moved (the cheap check) ...
+    const text = getComputedStyle(document.body).color;
+    if (text === lastText && dark !== null) return picker.syncMode();
+    lastText = text;
+    // ... it may be fading to its new mode: finish the fade at once, then see which
+    // mode it is in and read its colours.
+    instantly(() => {
+      const now = CS.pageIsDark();
+      if (dark !== null && now !== dark) restart();
+      dark = now;
+      lastText = getComputedStyle(document.body).color;
+    });
     picker.syncMode();
   }
+  let restartTimer = 0;
   function restartSoon() {
-    clearTimeout(modeTimer);
-    modeTimer = setTimeout(() => {
+    clearTimeout(restartTimer);
+    restartTimer = setTimeout(() => {
       dark = CS.pageIsDark();
       restart();
       picker.syncMode();
@@ -394,13 +554,26 @@
   }
   const soon = () => { clearTimeout(modeTimer); modeTimer = setTimeout(checkMode, 150); };
   const modeObserver = new MutationObserver((records) => {
-    if (forced && siteChangedMode(records)) release();
+    const site = forced && siteChangedMode(records);
+    if (site === 'release') release();
+    else if (site === 'rewrite') instantly(() => writeMode(forced.dark));
     modeObserver.takeRecords();
     soon();
   });
   modeObserver.observe(html, { attributes: true, attributeOldValue: true, attributeFilter: ['class', 'data-mode', 'data-theme', 'style'] });
   modeObserver.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-mode', 'data-theme'] });
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', soon);
+  // Inner roots that mount later, or that the app re-renders, take the scene's mode too.
+  const innerObserver = new MutationObserver((records) => {
+    if (!forced) return;
+    const want = forced.dark ? 'dark' : 'light';
+    for (const r of records) {
+      if (r.type === 'attributes') writeInner(r.target, want);
+      else for (const node of r.addedNodes) if (node.nodeType === 1) writeInner(node, want);
+    }
+    innerObserver.takeRecords();
+  });
+  innerObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-mode'] });
 
   function boot(saved) {
     settings = { ...DEFAULTS, ...saved };

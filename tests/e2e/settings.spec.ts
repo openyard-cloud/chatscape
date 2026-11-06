@@ -28,7 +28,8 @@ test('Turn off restores the page, and stays off after a reload', async ({ open }
   await send(page, '#editor', '/chatscape');
   await picker(page).getByRole('button', { name: 'Turn off' }).click();
   await expect(page.locator('html')).not.toHaveAttribute('data-chatscape', '');
-  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(bodyBefore);
+  // (the page fades back to its own background)
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(bodyBefore);
   await page.reload();
   await page.waitForTimeout(800);
   await expect(page.locator('html')).not.toHaveAttribute('data-chatscape', '');

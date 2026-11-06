@@ -18,21 +18,19 @@ Chatscape is an independent open-source project. It is not affiliated with or en
 ## Use
 
 - Open the picker: click the Chatscape toolbar button, press **Alt+Shift+T** (**⌥ Option+Shift+T** on a Mac), or type `/chatscape` in the chat box and press Enter (the message is not sent).
-- Arrow keys move through the themes and apply them live; Esc closes the picker.
-- **Dim** lays a veil in the page's own colour over the scene so text stays readable. **Glass** sets how see-through the sidebar, composer and menus are. **Speed** 0 freezes the scene.
+- Scenes are grouped as **Light** and **Dark**. Arrow keys move through them and apply them live; Esc closes the picker.
+- **Page follows scene** (on by default) puts claude.ai or ChatGPT in light mode for a light scene and dark mode for a dark one. Nothing is saved to the site: turning Chatscape off gives the page its own mode back, and a mode you pick in the site's settings wins until you pick another scene.
+- **Dim** lays a veil in the page's own colour over the scene so text stays readable. It is strongest behind the conversation and lighter at the sides, and suns and moons keep out of the conversation and from under the sidebar. **Glass** sets how see-through the sidebar, composer and menus are. **Speed** 0 freezes the scene.
 - **Turn off** restores the page exactly as it was.
 
 Your choice syncs across your Chrome profiles through `chrome.storage.sync`, with a copy in `chrome.storage.local` in case sync is off.
 
 ## Themes
 
-| Group | Themes |
+| Picker group | Themes |
 | --- | --- |
-| Nature | Cloud Drift, Fireflies, Bamboo Grove, Sakura |
-| Water | Koi Pond, Jellyfish, Honu Lagoon, Paper Boats |
-| Night sky | Moonlit, Meteor Shower, Aurora, Night City |
-| Weather | Window Rain, Snowfall, Sunset Beach, Mid-Autumn Lanterns |
-| Tech | Code Rain, Neon Rain, Game of Life, Retro 8-bit |
+| Light | Cloud Drift, Bamboo Grove, Sakura, Honu Lagoon, Paper Boats, Sunset Beach |
+| Dark | Fireflies, Koi Pond, Jellyfish, Moonlit, Meteor Shower, Aurora, Night City, Window Rain, Snowfall, Mid-Autumn Lanterns, Code Rain, Neon Rain, Game of Life, Retro 8-bit |
 
 ## Privacy
 

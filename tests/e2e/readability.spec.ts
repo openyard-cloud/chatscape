@@ -1,7 +1,7 @@
 // Can a person still read the chat? Every check here measures a screenshot, in both page
 // modes, with a dark scene (Code Rain) and a light one (Cloud Drift).
 import { test, expect } from './extension';
-import { brightness, textContrast, variation } from './helpers';
+import { brightness, textContrast, variation, worstContrast } from './helpers';
 
 const SCENES = [
   { id: 'code-rain', name: 'Code Rain' },
@@ -31,6 +31,44 @@ test('no solid band is painted around the composer', async ({ settle, open }) =>
   expect(await variation(page, band)).toBeGreaterThan((await variation(page, scene)) * 0.25);
   expect(await brightness(page, band)).toBeLessThan(0.97);
 });
+
+for (const site of ['claude', 'chatgpt'] as const) {
+  test(`${site}: the veil is strongest behind the conversation, the scene keeps its colour beside it`, async ({ settle, open }) => {
+    await settle({ theme: 'snowfall' });
+    const page = await open(site, 'dark');
+    const lane = (await page.locator('#chatscape-canvas').getAttribute('data-lane'))!.split(' ').map(Number);
+    expect(lane).toHaveLength(2);
+    // how far the canvas is from the page colour (what the veil mixes in), in a
+    // text-free band, inside the lane and beside it
+    const page_ = site === 'claude' ? [0x1f, 0x1e, 0x1d] : [0x21, 0x21, 0x21];
+    const spread = (x0: number, x1: number) => page.evaluate(([a, b, p]) => {
+      const c = document.getElementById('chatscape-canvas') as HTMLCanvasElement;
+      const k = c.width / innerWidth;
+      const d = c.getContext('2d')!.getImageData(Math.round(a * k), Math.round(innerHeight * 0.62 * k), Math.round((b - a) * k), 40).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += Math.abs(d[i] - p[0]) + Math.abs(d[i + 1] - p[1]) + Math.abs(d[i + 2] - p[2]);
+      return sum / (d.length / 4);
+    }, [x0, x1, page_] as [number, number, number[]]);
+    const inLane = await spread(lane[0] + 60, lane[1] - 60);
+    const beside = await spread(lane[1] + 100, Math.min(lane[1] + 200, 1440));
+    expect(beside).toBeGreaterThan(inLane * 1.6);
+  });
+}
+
+for (const mode of ['light', 'dark'] as const) {
+  test(`${mode} page: the composer's dock is not a flat slab, the composer itself is glass`, async ({ settle, open }) => {
+    await settle({ theme: 'meteor-shower', matchMode: false });
+    const page = await open('claude', mode);
+    await expect(page.locator('#footer')).not.toHaveAttribute('data-chatscape-glass', /.*/);
+    await expect(page.locator('#composer')).toHaveAttribute('data-chatscape-glass', '');
+    // the strip under the composer, where the hint sits, shows the scene, not a flat fill
+    const hint = (await page.locator('#footer .hint').boundingBox())!;
+    const strip = { x: hint.x + hint.width * 0.7, y: hint.y, width: hint.width * 0.28, height: hint.height };
+    const scene = { x: strip.x, y: strip.y - 260, width: strip.width, height: strip.height };
+    expect(await variation(page, strip)).toBeGreaterThan((await variation(page, scene)) * 0.25);
+    expect(await worstContrast(page, '#footer .hint')).toBeGreaterThan(4.5);
+  });
+}
 
 for (const mode of ['light', 'dark'] as const) {
   test(`${mode} page: an open Settings dialog is solid and the page behind it is dimmed`, async ({ settle, open }) => {
@@ -62,5 +100,38 @@ for (const mode of ['dark', 'light'] as const) {
     const page = await open('chatgpt', mode);
     expect(await textContrast(page.locator('#answer-text'))).toBeGreaterThan(7);
     expect(await textContrast(page.locator('#sidebar-text'))).toBeGreaterThan(7);
+  });
+}
+
+for (const scene of ['sakura', 'aurora'] as const) {
+  test(`chatgpt.com log-in dialog stays solid (${scene})`, async ({ settle, open }) => {
+    await settle({ theme: scene });
+    const page = await open('chatgpt', 'dark');
+    await page.locator('#login').click();
+    const panel = page.locator('dialog.auth section'); // (it may go clear on the dialog's solid glass)
+    await page.waitForTimeout(1000);
+    for (const wait of [0, 4500]) {
+      await page.waitForTimeout(wait); // and again after the scanner's next sweep
+      // nothing in the dialog is taken for a page-coloured strip around the composer ...
+      await expect(page.locator('dialog.auth')).not.toHaveAttribute('data-chatscape-mask', /.*/);
+      await expect(panel).not.toHaveAttribute('data-chatscape-mask', /.*/);
+      // ... and its surface stays (nearly) opaque, so the page does not show through
+      const alpha = await page.locator('dialog.auth').evaluate((el) => {
+        const c = getComputedStyle(el).backgroundColor;
+        return c.startsWith('rgba') ? Number(c.match(/([\d.]+)\s*\)$/)![1]) : 1;
+      });
+      expect(alpha).toBeGreaterThan(0.9);
+      expect(await textContrast(page.locator('#auth-text'))).toBeGreaterThan(7);
+    }
+  });
+}
+
+for (const mode of ['light', 'dark'] as const) {
+  test(`${mode} page: a primary button in a dialog keeps its own fill`, async ({ settle, open }) => {
+    await settle({ theme: mode === 'light' ? 'sakura' : 'aurora' });
+    const page = await open('claude', mode);
+    await page.locator('#open-settings').click();
+    await page.waitForTimeout(800);
+    expect(await textContrast(page.locator('#copy-link'))).toBeGreaterThan(4.5);
   });
 }
