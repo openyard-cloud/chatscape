@@ -476,26 +476,46 @@
     if (changed) restartSoon();
   }
 
-  // Did a change on <html> come from the site switching its own mode?
+  // When the person last clicked or pressed a key on the page (not in the picker).
+  let lastInput = -Infinity;
+  const noteInput = (e) => {
+    if (!picker.contains(e.target)) lastInput = performance.now();
+  };
+  addEventListener('pointerdown', noteInput, true);
+  addEventListener('keydown', noteInput, true);
+  const byHand = () => performance.now() - lastInput < 1500;
+
+  // Did a change on <html> come from the site switching its own mode? Returns
+  // 'release' when it did (the site's choice wins), 'rewrite' when the site only wrote
+  // its mode again (signed-in ChatGPT does once it has loaded) and the scene's mode
+  // should go back, or null.
   function siteChangedMode(records) {
     const want = forced.dark ? 'dark' : 'light';
+    let rewrite = false;
     for (const r of records) {
       if (r.target !== html) continue;
       if (MODE_ATTRS.includes(r.attributeName)) {
         const value = html.getAttribute(r.attributeName);
-        if (isMode(value) && value !== want) return true;
+        const entry = forced.attrs.find(([name]) => name === r.attributeName);
+        const before = entry[1];
+        entry[1] = value; // what Turn off puts back from now on
+        if (!isMode(value) || value === want) continue;
+        // A new mode, or one written right after a click or a key press (claude.ai's
+        // `/theme dark` when it was dark before the scene), is the person's choice.
+        if ((isMode(before) && value !== before) || byHand()) return 'release';
+        rewrite = true;
         continue;
       }
       if (r.attributeName !== 'class' || r.oldValue === html.className) continue;
-      if (html.classList.contains(forced.dark ? 'light' : 'dark')) return true;
+      if (html.classList.contains(forced.dark ? 'light' : 'dark')) return 'release';
       // ChatGPT's mode classes have generated names: lift our override for a moment
       // and see which mode the page asks for now.
       liftStyle();
       const own = CS.pageIsDark();
       writeMode(forced.dark);
-      if (own !== forced.own) return true;
+      if (own !== forced.own) return 'release';
     }
-    return false;
+    return rewrite ? 'rewrite' : null;
   }
 
   // claude.ai and ChatGPT switch between light and dark without a reload. When
@@ -534,7 +554,9 @@
   }
   const soon = () => { clearTimeout(modeTimer); modeTimer = setTimeout(checkMode, 150); };
   const modeObserver = new MutationObserver((records) => {
-    if (forced && siteChangedMode(records)) release();
+    const site = forced && siteChangedMode(records);
+    if (site === 'release') release();
+    else if (site === 'rewrite') instantly(() => writeMode(forced.dark));
     modeObserver.takeRecords();
     soon();
   });

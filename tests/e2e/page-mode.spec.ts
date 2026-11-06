@@ -46,17 +46,39 @@ test('chatgpt signed in: the scene sets html[data-theme], and Turn off puts it b
   await expect(html(page)).not.toHaveAttribute('data-mode', /.*/);
 });
 
-test('chatgpt signed in: a mode the site sets by hand wins', async ({ settle, context }) => {
+test('chatgpt signed in: a mode picked by hand in its settings wins', async ({ settle, context }) => {
   await settle({ theme: 'sakura' });
   const page = await context.newPage();
   await page.goto('https://chatgpt.com/?mode=dark&signed=1');
   await page.locator('#chatscape-canvas').waitFor({ state: 'attached' });
   await expect(html(page)).toHaveAttribute('data-theme', 'light');
-  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark')); // as Settings > Appearance does
+  await page.waitForTimeout(1600);
+  await page.locator('#sidebar-text').click(); // as in Settings > Appearance
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
   await page.waitForTimeout(800);
   await expect(html(page)).toHaveAttribute('data-theme', 'dark');
   expect(await textContrast(page.locator('#answer-text'))).toBeGreaterThan(7);
 });
+
+// Once it has loaded, signed-in ChatGPT writes its saved mode on <html> again, with no
+// one asking: that is not a choice, the scene's mode stays.
+for (const how of ['again', 'late'] as const) {
+  test(`chatgpt signed in: the site writing its mode ${how === 'again' ? 'again' : 'for the first time'} after load does not undo the scene`, async ({ settle, context }) => {
+    await settle({ theme: 'sakura' });
+    const page = await context.newPage();
+    await page.goto(`https://chatgpt.com/?mode=dark&signed=${how}`);
+    await page.locator('#chatscape-canvas').waitFor({ state: 'attached' });
+    await page.waitForTimeout(2500); // the stand-in writes it 1.5s in
+    await expect(html(page)).toHaveAttribute('data-written', '1');
+    await expect(html(page)).toHaveAttribute('data-theme', 'light');
+    expect(await textContrast(page.locator('#answer-text'))).toBeGreaterThan(7);
+    // and Turn off gives the page the mode it wrote
+    await page.locator('body').click();
+    await page.keyboard.press('Alt+Shift+KeyT');
+    await picker(page).getByRole('button', { name: 'Turn off' }).click();
+    await expect(html(page)).toHaveAttribute('data-theme', 'dark');
+  });
+}
 
 test('the picker lists light scenes first, then dark ones', async ({ open }) => {
   const page = await open('claude');

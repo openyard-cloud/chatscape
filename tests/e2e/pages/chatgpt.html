@@ -74,10 +74,20 @@ dialog.auth .go { display: block; width: 100%; margin-top: 12px; padding: 14px; 
   };
   const params = new URLSearchParams(location.search);
   const mode = params.get('mode');
-  if (params.get('signed')) {
-    document.documentElement.removeAttribute('data-mode');
-    document.documentElement.setAttribute('data-theme', mode || 'dark');
-    document.documentElement.setAttribute('data-appearance-preset', 'codex');
+  const signed = params.get('signed');
+  if (signed) {
+    const root = document.documentElement;
+    root.removeAttribute('data-mode');
+    root.setAttribute('data-appearance-preset', 'codex');
+    // 'late': the mode is only written once the app has loaded; 'again': it is in the
+    // HTML and the app writes it again once loaded (both seen on chatgpt.com)
+    if (signed !== 'late') root.setAttribute('data-theme', mode || 'dark');
+    if (signed === 'late' || signed === 'again') {
+      setTimeout(() => {
+        root.setAttribute('data-theme', mode || 'dark');
+        root.setAttribute('data-written', '1');
+      }, 1500);
+    }
   } else if (mode) document.documentElement.setAttribute('data-mode', mode);
 </script>
 </body>
