@@ -54,3 +54,22 @@ html[data-chatscape] [data-chatscape-noshadow] {
 html:not([data-chatscape]) #chatscape-canvas {
   display: none !important;
 }
+
+/* Holds the picker when the site has a modal dialog open (see picker.js). */
+#chatscape-layer {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+  outline: none !important;
+}
+#chatscape-layer::backdrop {
+  background: transparent !important;
+}

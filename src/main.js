@@ -307,6 +307,14 @@
         picker.toggle();
         return;
       }
+      // Esc closes the picker first. Sites listen for Esc on the document to
+      // close their own menus and dialogs, which would close the one behind it.
+      if (e.key === 'Escape' && picker.isOpen && !e.isComposing) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        picker.close();
+        return;
+      }
       if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
       const editor = editorOf(e.target);
       if (!editor || picker.contains(editor)) return;

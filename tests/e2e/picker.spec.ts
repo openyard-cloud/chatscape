@@ -69,3 +69,36 @@ test('the picker shows the Mac shortcut on a Mac and the Alt one elsewhere', asy
   const mac = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform));
   await expect(picker(page)).toContainText(mac ? '⌥ Option+Shift+T' : 'Alt+Shift+T');
 });
+
+test("the picker opens above a site's modal dialog and takes clicks", async ({ open }) => {
+  // ChatGPT's log-in is a <dialog> opened with showModal(): it sits in the top
+  // layer, above any z-index, and makes everything else on the page inert.
+  const page = await open('chatgpt', 'light');
+  await page.locator('#login').click();
+  await expect(page.locator('dialog.auth')).toBeVisible();
+  await page.keyboard.press('Alt+Shift+KeyT');
+  await expect(picker(page)).toBeVisible();
+
+  const aurora = picker(page).getByRole('option', { name: 'Aurora' });
+  await aurora.click(); // a click on an inert or covered picker would time out
+  await expect(aurora).toHaveAttribute('aria-selected', 'true');
+
+  await page.keyboard.press('Escape');
+  await expect(picker(page)).toHaveCount(0);
+  await expect(page.locator('dialog.auth')).toBeVisible(); // Esc closes only the picker
+  await expect(page.locator('#chatscape-layer')).toHaveCount(0);
+});
+
+test("Esc closes the picker, not the site's dialog behind it", async ({ open }) => {
+  const page = await open('claude');
+  await page.locator('#open-settings').click();
+  await expect(page.locator('#settings')).toBeVisible();
+  await page.keyboard.press('Alt+Shift+KeyT');
+  await expect(picker(page)).toBeVisible();
+  await page.locator('#mode-light').focus(); // focus back on the site, as after a click on it
+  await page.keyboard.press('Escape');
+  await expect(picker(page)).toHaveCount(0);
+  await expect(page.locator('#settings')).toBeVisible();
+  await page.keyboard.press('Escape'); // and the next Esc is the site's again
+  await expect(page.locator('#settings')).toHaveCount(0);
+});

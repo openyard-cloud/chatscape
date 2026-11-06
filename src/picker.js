@@ -50,17 +50,27 @@
     return node;
   }
 
+  const siteModalOpen = () => {
+    try {
+      return !!document.querySelector('dialog:modal');
+    } catch {
+      return false;
+    }
+  };
+
   class Picker {
     constructor({ getSettings, onChange }) {
       this.getSettings = getSettings;
       this.onChange = onChange;
       this.host = null;
+      this.layer = null; // the <dialog> it opens in above a site's modal dialog
       this.isOpen = false;
       this.thumbTimer = 0;
     }
 
     contains(node) {
-      return !!this.host && (node === this.host || this.host.contains(node));
+      const top = this.layer || this.host;
+      return !!top && (node === top || top.contains(node));
     }
 
     toggle() {
@@ -72,7 +82,19 @@
       if (this.isOpen) return;
       this.isOpen = true;
       this.build();
-      document.documentElement.append(this.host);
+      if (siteModalOpen()) {
+        // A modal <dialog> (ChatGPT's log-in) sits in the top layer, above any
+        // z-index, and makes the rest of the page inert. Only another modal
+        // dialog opened after it is drawn above it and can take clicks.
+        this.layer = el('dialog', { id: 'chatscape-layer' }, [this.host]);
+        this.layer.addEventListener('close', () => this.close());
+        // The layer covers the page, so a click beside the panel closes it.
+        this.layer.addEventListener('click', (e) => e.target === this.layer && this.close());
+        document.documentElement.append(this.layer);
+        this.layer.showModal();
+      } else {
+        document.documentElement.append(this.host);
+      }
       this.cards.find((card) => card.dataset.id === this.getSettings().theme)?.focus();
     }
 
@@ -81,6 +103,12 @@
       this.isOpen = false;
       clearInterval(this.thumbTimer);
       this.host.remove();
+      if (this.layer) {
+        const layer = this.layer;
+        this.layer = null;
+        if (layer.open) layer.close();
+        layer.remove();
+      }
       this.panel = null;
     }
 

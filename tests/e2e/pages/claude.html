@@ -132,6 +132,10 @@ td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: lef
     document.getElementById('mode-dark').onclick = () => setMode('dark');
     document.getElementById('close-settings').onclick = () => { document.getElementById('settings').remove(); document.getElementById('backdrop').remove(); };
   };
+  // Like Radix on claude.ai: Esc anywhere closes the open dialog, heard on the document.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') document.getElementById('close-settings')?.click();
+  }, true);
   const params = new URLSearchParams(location.search);
   if (params.get('mode')) setMode(params.get('mode'));
 </script>
