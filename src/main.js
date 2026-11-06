@@ -392,7 +392,15 @@
     html.style.setProperty('color-scheme', want, 'important');
     html.style.setProperty('--lightningcss-light', isDark ? ' ' : 'initial', 'important');
     html.style.setProperty('--lightningcss-dark', isDark ? 'initial' : ' ', 'important');
+    setFlipped(!!forced && isDark !== forced.own ? want : null);
   }
+
+  // The mode the scene has put the page in when the page was not in it (see page.css:
+  // code the site coloured inline for its own mode is turned around), or null.
+  const setFlipped = (mode) => {
+    if (!mode) html.removeAttribute('data-chatscape-flipped');
+    else if (html.getAttribute('data-chatscape-flipped') !== mode) html.setAttribute('data-chatscape-flipped', mode);
+  };
 
   function liftStyle() {
     for (const [key, value, priority] of forced.style) {
@@ -428,6 +436,7 @@
     }
     liftStyle();
     restoreInner();
+    setFlipped(null);
     forced = null;
     modeObserver.takeRecords();
     innerObserver.takeRecords();
@@ -438,6 +447,7 @@
   function release() {
     liftStyle();
     innerOwn.clear();
+    setFlipped(null);
     forced = null;
     modeObserver.takeRecords();
   }

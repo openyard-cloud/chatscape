@@ -31,6 +31,26 @@ html[data-chatscape] [data-chatscape-mask] {
   text-shadow: 0 0 3px rgb(var(--chatscape-rgb)), 0 0 8px rgb(var(--chatscape-rgb)), 0 0 14px rgb(var(--chatscape-rgb)) !important;
 }
 
+/* the messages fade out just above the docked composer, whose strips are now clear;
+   --chatscape-fade is where the composer starts, in the messages' own box (scanner.js).
+   no-clip keeps content wider than the column (a wide table) from being cut off. */
+html[data-chatscape] [data-chatscape-fade] {
+  mask-image: linear-gradient(to bottom, #000 calc(var(--chatscape-fade) - 44px), transparent calc(var(--chatscape-fade) - 6px)) !important;
+  mask-clip: no-clip !important;
+}
+
+/* Code that the site colours inline for its own mode (claude.ai's highlighter follows
+   the mode chosen in its settings, not html[data-mode]) is turned around while a scene
+   has put the page in the other mode, so it reads on the new background. Turned
+   around, a dark theme's mid-tones land at mid-tones; a little darker on a light page
+   (lighter on a dark one) brings them to at least 4.5:1. */
+html[data-chatscape][data-chatscape-flipped="light"] pre[style*="color"] {
+  filter: invert(1) hue-rotate(180deg) brightness(0.8) !important;
+}
+html[data-chatscape][data-chatscape-flipped="dark"] pre[style*="color"] {
+  filter: invert(1) hue-rotate(180deg) brightness(1.2) !important;
+}
+
 /* modal panels: nearly solid, so nothing behind them mixes with their text */
 html[data-chatscape] [data-chatscape-glass][data-chatscape-solid] {
   background-color: rgba(var(--chatscape-rgb), 0.94) !important;
