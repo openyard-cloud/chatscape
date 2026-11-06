@@ -11,6 +11,7 @@
   const SOLID = 'data-chatscape-solid';
   const NOSHADOW = 'data-chatscape-noshadow';
   const MASK = 'data-chatscape-mask';
+  const FADE = 'data-chatscape-fade';
   const DIALOG = '[role="dialog"], [role="alertdialog"], dialog, [aria-modal="true"]';
   const MIN_GLASS_AREA = 1600;
   const CLEAR_RATIO = 0.3;
@@ -57,21 +58,28 @@
 
   const near = (a, b) => !!a && !!b && Math.abs(a.r - b.r) + Math.abs(a.g - b.g) + Math.abs(a.b - b.b) <= 12;
 
-  // claude.ai docks its composer in a square strip painted with the page colour, to
-  // hide messages scrolling under it. Made frosted, that strip reads as a flat gray
-  // slab around the rounded composer. An element painted the colour of what is behind
-  // it, that mostly holds a surface of another colour, is such a strip: it goes clear and the surface inside
-  // becomes the glass.
-  function isMask(el, color, behind, area) {
-    if (!near(color, behind)) return false;
-    const inner = el.getElementsByTagName('*');
-    for (let i = 0; i < inner.length && i < 400; i++) {
-      const c = parseColor(getComputedStyle(inner[i]).backgroundColor);
-      if (!c || c.a < 0.5 || near(c, color)) continue;
-      const r = inner[i].getBoundingClientRect();
-      if (r.width * r.height >= area * 0.3) return true;
+  // claude.ai docks its composer at the bottom of the conversation, in strips painted
+  // with the page colour (one around the composer and its disclaimer, two "wings" out
+  // to the window's sides) that hide messages scrolling under it. Frosted, those strips
+  // read as a flat band across the page; cleared, the messages show through them. So
+  // the strips go clear, the composer's own box becomes the glass, and the messages
+  // fade out just above the composer instead (see fade()).
+  // The dock is the sticky (or fixed) box at the bottom of the window that holds the
+  // chat box; the card is the chat box's rounded frame inside it.
+  function findDock(skip) {
+    for (const editor of document.querySelectorAll('#prompt-textarea, [contenteditable="true"], textarea')) {
+      if (skip(editor)) continue;
+      for (let el = editor.parentElement; el && el !== document.body; el = el.parentElement) {
+        const position = getComputedStyle(el).position;
+        if (position !== 'sticky' && position !== 'fixed') continue;
+        const r = el.getBoundingClientRect();
+        if (r.bottom < innerHeight - 2 || r.height > innerHeight * 0.5) break;
+        let card = editor;
+        while (card !== el && !(parseFloat(getComputedStyle(card).borderTopLeftRadius) >= 8 && card.offsetWidth * card.offsetHeight >= MIN_GLASS_AREA)) card = card.parentElement;
+        return { dock: el, card: card === el ? null : card };
+      }
     }
-    return false;
+    return null;
   }
 
   class Scanner {
@@ -83,26 +91,88 @@
       this.pending = new Set();
       this.timer = 0;
       this.sweep = 0;
+      this.dock = null;
+      this.card = null;
+      this.faded = new Set();
+      this.fadeQueued = false;
+      this.onMove = () => {
+        if (this.fadeQueued) return;
+        this.fadeQueued = true;
+        requestAnimationFrame(() => {
+          this.fadeQueued = false;
+          this.fade();
+        });
+      };
+      this.resized = new ResizeObserver(this.onMove);
     }
 
     start() {
       this.scan(document.body);
       this.observer.observe(document.body, { childList: true, subtree: true });
       this.sweep = setInterval(() => this.scan(document.body), 4000);
+      document.addEventListener('scroll', this.onMove, { capture: true, passive: true });
+      addEventListener('resize', this.onMove);
     }
 
     stop() {
       this.observer.disconnect();
       clearInterval(this.sweep);
       clearTimeout(this.timer);
-      for (const el of document.querySelectorAll(`[${CLEAR}], [${GLASS}], [${NOSHADOW}]`)) {
-        el.removeAttribute(CLEAR);
-        el.removeAttribute(MASK);
-        el.removeAttribute(GLASS);
-        el.removeAttribute(SOLID);
-        el.removeAttribute(NOSHADOW);
-        el.style.removeProperty('--chatscape-rgb');
+      document.removeEventListener('scroll', this.onMove, { capture: true });
+      removeEventListener('resize', this.onMove);
+      this.resized.disconnect();
+      this.unfade();
+      for (const el of document.querySelectorAll(`[${CLEAR}], [${GLASS}], [${NOSHADOW}]`)) unmark(el);
+      this.dock = this.card = null;
+    }
+
+    // Finds the docked chat box again; when it is new, what was decided inside it
+    // before (without knowing it was the dock) is decided again.
+    watchDock() {
+      const found = findDock(this.skip);
+      const dock = found?.dock ?? null, card = found?.card ?? null;
+      if (dock === this.dock && card === this.card) return false;
+      this.resized.disconnect();
+      this.unfade();
+      for (const el of [this.dock, this.card, dock]) {
+        if (!el?.isConnected) continue;
+        unmark(el);
+        for (const inner of el.querySelectorAll(`[${CLEAR}], [${GLASS}]`)) unmark(inner);
       }
+      this.dock = dock;
+      this.card = card;
+      if (dock) this.resized.observe(dock);
+      return !!dock;
+    }
+
+    // The messages fade out just above the composer (or a banner over it, whichever is
+    // higher), where the strips that hid them were. The mask is drawn in the messages'
+    // own box, which scrolls, so it is moved on scroll.
+    fade() {
+      if (!this.dock?.isConnected) return;
+      let top = Infinity;
+      for (const el of [this.card ?? this.dock, ...this.dock.querySelectorAll(`[${GLASS}]`)]) {
+        const r = el.getBoundingClientRect();
+        if (r.height) top = Math.min(top, r.top);
+      }
+      if (top === Infinity) return;
+      for (let el = this.dock.previousElementSibling; el; el = el.previousElementSibling) {
+        const r = el.getBoundingClientRect();
+        if (!r.height) continue;
+        el.style.setProperty('--chatscape-fade', `${Math.round(top - r.top)}px`);
+        if (!this.faded.has(el)) {
+          el.setAttribute(FADE, '');
+          this.faded.add(el);
+        }
+      }
+    }
+
+    unfade() {
+      for (const el of this.faded) {
+        el.removeAttribute(FADE);
+        el.style.removeProperty('--chatscape-fade');
+      }
+      this.faded.clear();
     }
 
     // The colour painted behind an element: its nearest ancestor with a background.
@@ -127,6 +197,7 @@
 
     scan(root) {
       if (!root) return;
+      const newDock = this.watchDock();
       const viewport = innerWidth * innerHeight;
       const all = [root, ...root.getElementsByTagName('*')];
       for (const el of all) {
@@ -134,11 +205,28 @@
         const style = getComputedStyle(el);
         if (style.boxShadow !== 'none' && solidShadow(style.boxShadow)) el.setAttribute(NOSHADOW, '');
         const color = parseColor(style.backgroundColor);
+        if (el === this.card) {
+          // the chat box is the glass, in its own colour or, when its frame is
+          // clear and the strip around it paints it, in the strip's
+          const fill = color && color.a >= 0.5 ? color : this.behind(el) ?? this.pageColor;
+          if (color) this.painted.set(el, color);
+          if (fill) el.style.setProperty('--chatscape-rgb', `${fill.r}, ${fill.g}, ${fill.b}`);
+          el.setAttribute(GLASS, '');
+          continue;
+        }
         if (!color || color.a < 0.5) continue;
         const rect = el.getBoundingClientRect();
         const area = rect.width * rect.height;
         this.painted.set(el, color);
         const dialog = el.closest(DIALOG);
+        if (!dialog && this.dock?.contains(el) && !this.card?.contains(el) && near(color, this.behind(el))) {
+          // a strip of the dock, painted like the page: clear, with a soft halo in
+          // its colour for its loose text (the disclaimer under the composer)
+          el.style.setProperty('--chatscape-rgb', `${color.r}, ${color.g}, ${color.b}`);
+          el.setAttribute(CLEAR, '');
+          el.setAttribute(MASK, '');
+          continue;
+        }
         // A modal's own surface stays a near-solid panel however large it is,
         // so the page behind it does not show through and mix with its text.
         if (dialog && !el.parentElement?.closest(`[${GLASS}]`) && area >= MIN_GLASS_AREA) {
@@ -154,16 +242,6 @@
           // for the veil that keeps text readable over the wallpaper.
           if (!this.pageColor) this.pageColor = color;
           el.setAttribute(CLEAR, '');
-        } else if (!dialog && area >= MIN_GLASS_AREA && (isMask(el, color, this.behind(el), area) || (el.parentElement?.closest(`[${MASK}]`) && near(color, this.behind(el))))) {
-          // (a page-coloured row inside such a strip, like claude.ai's disclaimer
-          // "chin" under the composer, is part of the strip; nothing inside a modal
-          // is a strip: ChatGPT's white log-in dialog on a white page holds a black
-          // button, and is still tiny while it zooms in)
-          // its loose text (a disclaimer under the composer) gets a soft halo in the
-          // strip's colour, since the strip no longer sits behind it
-          el.style.setProperty('--chatscape-rgb', `${color.r}, ${color.g}, ${color.b}`);
-          el.setAttribute(CLEAR, '');
-          el.setAttribute(MASK, '');
         } else if (style.pointerEvents === 'none' || el.parentElement?.closest(`[${GLASS}]`)) {
           // Decorative overlays (fades, scrims) and panels inside a frosted panel
           // would stack into a dark block, so they go clear instead, when they are
@@ -176,7 +254,14 @@
           el.setAttribute(GLASS, '');
         }
       }
+      if (newDock && !root.contains(this.dock)) this.scan(this.dock);
+      this.fade();
     }
+  }
+
+  function unmark(el) {
+    for (const name of [CLEAR, MASK, GLASS, SOLID, NOSHADOW]) el.removeAttribute(name);
+    el.style.removeProperty('--chatscape-rgb');
   }
 
   // The page colour before any change: html or body, whichever is opaque.

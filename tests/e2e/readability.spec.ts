@@ -1,7 +1,7 @@
 // Can a person still read the chat? Every check here measures a screenshot, in both page
 // modes, with a dark scene (Code Rain) and a light one (Cloud Drift).
 import { test, expect } from './extension';
-import { brightness, textContrast, variation, worstContrast } from './helpers';
+import { brightness, picker, textContrast, variation, worstContrast } from './helpers';
 
 const SCENES = [
   { id: 'code-rain', name: 'Code Rain' },
@@ -67,6 +67,70 @@ for (const mode of ['light', 'dark'] as const) {
     const scene = { x: strip.x, y: strip.y - 260, width: strip.width, height: strip.height };
     expect(await variation(page, strip)).toBeGreaterThan((await variation(page, scene)) * 0.25);
     expect(await worstContrast(page, '#footer .hint')).toBeGreaterThan(4.5);
+  });
+}
+
+// How much of an area is the stand-in's magenta marker: a message that shows through.
+const magenta = (page: import('@playwright/test').Page, clip: { x: number; y: number; width: number; height: number }) =>
+  page.screenshot({ clip, animations: 'disabled' }).then(async (png) => {
+    const { PNG } = await import('pngjs');
+    const { data } = PNG.sync.read(png);
+    let n = 0;
+    for (let i = 0; i < data.length; i += 4) if (data[i] - data[i + 1] > 120 && data[i + 2] - data[i + 1] > 120) n++;
+    return n / (data.length / 4);
+  });
+
+for (const mode of ['light', 'dark'] as const) {
+  test(`${mode} page: the docked composer leaves no band across the page, and messages do not show under it`, async ({ settle, open }) => {
+    await settle({ theme: 'meteor-shower', matchMode: false });
+    const page = await open('claude', mode);
+    // beside the composer, where claude.ai's wings are, the scene shows: not a flat band
+    const composer = (await page.locator('#composer').boundingBox())!;
+    const wing = { x: composer.x - 150, y: composer.y, width: 120, height: composer.height };
+    const above = { x: wing.x, y: wing.y - 300, width: wing.width, height: wing.height };
+    expect(await variation(page, wing)).toBeGreaterThan((await variation(page, above)) * 0.25);
+    // a message in the middle of the window is seen ...
+    const scrollTo = (y: number) => page.evaluate((y) => {
+      const marker = document.getElementById('marker')!;
+      document.getElementById('scroll')!.scrollTop += marker.getBoundingClientRect().top - y;
+    }, y);
+    await scrollTo(300);
+    await page.waitForTimeout(150);
+    const marker = (await page.locator('#marker').boundingBox())!;
+    expect(await magenta(page, { x: marker.x, y: marker.y, width: marker.width, height: marker.height })).toBeGreaterThan(0.5);
+    // ... and once scrolled under the dock, it is not: not beside the hint, not around the composer
+    const hint = (await page.locator('#footer .hint').boundingBox())!;
+    await scrollTo(hint.y);
+    await page.waitForTimeout(150);
+    expect(Math.abs((await page.locator('#marker').boundingBox())!.y - hint.y), 'the marker is under the hint').toBeLessThan(2);
+    // a message behind the banner over the composer is gone too
+    const banner = (await page.locator('#footer .banner').boundingBox())!;
+    await scrollTo(banner.y + 4);
+    await page.waitForTimeout(150);
+    expect(await magenta(page, { x: banner.x, y: banner.y, width: banner.width, height: banner.height })).toBeLessThan(0.002);
+    await scrollTo(hint.y);
+    await page.waitForTimeout(150);
+    const footer = (await page.locator('#footer').boundingBox())!;
+    expect(await magenta(page, { x: footer.x, y: footer.y - 10, width: footer.width, height: footer.height + 10 })).toBeLessThan(0.002);
+    for (const strip of ['#footer', '#wing-left', '#wing-right']) {
+      await expect(page.locator(strip)).not.toHaveAttribute('data-chatscape-glass', /.*/);
+    }
+    await expect(page.locator('#composer')).toHaveAttribute('data-chatscape-glass', '');
+  });
+}
+
+for (const [own, scene] of [['dark', 'sakura'], ['light', 'aurora']] as const) {
+  test(`code coloured for a ${own} page stays readable when the scene puts the page in the other mode`, async ({ settle, open }) => {
+    await settle({ theme: scene });
+    const page = await open('claude', own);
+    await expect(page.locator('html')).toHaveAttribute('data-mode', own === 'dark' ? 'light' : 'dark');
+    expect(await worstContrast(page, '#code')).toBeGreaterThan(4.5);
+    await expect(page.locator('html')).toHaveAttribute('data-chatscape-flipped', own === 'dark' ? 'light' : 'dark');
+    // turned off, the page and its code are as they were
+    await page.keyboard.press('Alt+Shift+T');
+    await picker(page).getByRole('button', { name: 'Turn off' }).click();
+    await expect(page.locator('html')).not.toHaveAttribute('data-chatscape-flipped', /.*/);
+    await expect(page.locator('html')).toHaveAttribute('data-mode', own);
   });
 }
 

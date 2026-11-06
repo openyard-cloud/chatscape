@@ -3,8 +3,13 @@
      It reproduces what has broken Chatscape before, not claude.ai's exact markup:
      - colours that compute to color(srgb ...) (color-mix), next to plain rgb()
      - a 32px solid box-shadow ring under the composer that hides scrolled messages
-     - a square, page-coloured dock around the banner, composer and hint (claude.ai's
-       in-data-cds-dock-masked:bg-page), which must not turn into a gray slab
+     - the composer docked like claude.ai's: a sticky box at the bottom of the scroller,
+       right after the messages, with a page-coloured strip around the banner, composer
+       and hint and two page-coloured "wings" out to the sides, there to hide messages
+       scrolling under it; they must not turn into a band across the page, and the
+       messages must not show through them either
+     - a code block coloured inline by a highlighter that follows the app's own mode
+       (its settings), not html[data-mode]
      - a decorative full-page grid layer with pointer-events: none
      - a large Settings dialog over a dark backdrop
      - light and dark modes switched live through html[data-mode], repeated like claude.ai
@@ -31,13 +36,20 @@ nav button { margin-top: auto; padding: 8px; border-radius: 8px; border: 1px sol
 main { position: relative; flex: 1; display: flex; flex-direction: column; background: color-mix(in srgb, var(--bg-100) 100%, transparent); }
 .grid { position: absolute; inset: 0; pointer-events: none; background-color: var(--bg-100); background-image: linear-gradient(to right, var(--line) 1px, transparent 1px); background-size: 40px 40px; }
 header { position: relative; height: 48px; display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid var(--line); background: var(--bg-100); }
-.scroll { position: relative; flex: 1; overflow: auto; padding: 24px 0 220px; }
-.msgs { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+.scroll { position: relative; flex: 1; overflow-y: auto; overflow-x: hidden; }
+.col { min-height: 100%; display: flex; flex-direction: column; padding-top: 24px; }
+.msgs { flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 0 20px 24px; }
+.more { padding-bottom: 600px; } /* room to scroll the marker to mid-window, whatever the fonts */
+.more p { color: var(--text-000); }
+#marker { height: 40px; background: #ff00ff; border-radius: 6px; }
+pre { font: 14px/1.5 ui-monospace, Menlo, monospace; padding: 12px 16px; border-radius: 10px; background: transparent; border: 1px solid var(--line); white-space: pre-wrap; }
 .user { margin-left: auto; width: fit-content; max-width: 70%; background: var(--bg-200); padding: 10px 16px; border-radius: 16px; margin-bottom: 24px; }
 table { border-collapse: collapse; width: 100%; margin: 12px 0; }
 td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }
-.bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 20px 12px; }
-.footer { max-width: 768px; margin: 0 auto; box-shadow: 0 0 0 32px var(--bg-100); background: var(--bg-100); }
+.dock { position: sticky; bottom: 0; width: 100%; max-width: 768px; margin: 0 auto; }
+.wing { position: absolute; top: 0; bottom: 0; width: 50vw; background: var(--bg-100); }
+.wing.left { right: 100%; } .wing.right { left: 100%; }
+.footer { position: relative; padding-bottom: 12px; box-shadow: 0 0 0 32px var(--bg-100); background: var(--bg-100); }
 .banner { padding: 12px 16px; border-radius: 14px 14px 0 0; background: var(--bg-200); font-size: 15px; }
 .composer { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--composer); border-radius: 16px; box-shadow: 0 0 0 1px var(--line), 0 4px 20px color-mix(in srgb, black 4%, transparent); }
 .composer [contenteditable] { flex: 1; outline: none; min-height: 24px; }
@@ -65,8 +77,9 @@ td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: lef
 <main data-mode="light" class="cds-root">
   <div class="grid"></div>
   <header><span>Weekend plans</span></header>
-  <div class="scroll">
-    <div class="msgs">
+  <div class="scroll" id="scroll">
+  <div class="col">
+    <div class="msgs" id="transcript">
       <div class="user">Can you plan a calm weekend in Da Lat for two?</div>
       <div id="answer">
         <p id="answer-text">Here is a slow weekend that leaves room to rest. Arrive Friday evening and walk around Xuan Huong lake while the market opens. On Saturday, take the early cable car to Truc Lam and have lunch near the flower gardens, then spend the afternoon in a café with a view of the pine hills. Sunday is for the night market leftovers you missed, a long breakfast, and the drive back before the evening traffic.</p>
@@ -78,14 +91,27 @@ td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: lef
         </table>
         <p>Pack a light jacket: evenings drop to 15°C even in summer.</p>
       </div>
+      <div class="more" id="more">
+        <p>A packing list for the weekend, in the order you will need things.</p>
+        <pre id="code"><span class="kw">const</span> bag = ['jacket', 'scarf', 'camera', 'charger'];
+bag.forEach((item) =&gt; console.log(item));</pre>
+        <p>Book the cable car early on Saturday: the first cars leave at 7:30 and the queue grows after nine. The flower gardens open at 7:00 and are quiet until the tour buses come.</p>
+        <p>For dinner on Friday, the lake side has small grill places that stay open late. On Saturday, try the artichoke tea at the market and buy some to bring home.</p>
+        <p>If it rains, the cafés along Tran Hung Dao have covered terraces with a view of the valley, and the train station is worth an hour for its old carriages.</p>
+        <p>On Sunday, leave before three to miss the traffic on the pass; there are fruit stands at the bottom where you can stop for a break.</p>
+        <p>Keep some cash for the market stalls; most of them do not take cards, and the ATMs near the lake run out on Saturday evenings.</p>
+        <div id="marker"></div>
+      </div>
+    </div>
+    <div class="dock" id="dock">
+      <div class="wing left" id="wing-left"></div><div class="wing right" id="wing-right"></div>
+      <div class="footer" id="footer">
+        <div class="banner">This chat has many images. If new images don't send, start a new chat.</div>
+        <div class="composer" id="composer"><span>+</span><div contenteditable="true" id="editor" role="textbox" aria-label="Write your prompt to Claude"></div><span>Opus</span></div>
+        <div class="hint">Claude can make mistakes.</div>
+      </div>
     </div>
   </div>
-  <div class="bottom">
-    <div class="footer" id="footer">
-      <div class="banner">This chat has many images. If new images don't send, start a new chat.</div>
-      <div class="composer" id="composer"><span>+</span><div contenteditable="true" id="editor" role="textbox" aria-label="Write your prompt to Claude"></div><span>Opus</span></div>
-      <div class="hint">Claude can make mistakes.</div>
-    </div>
   </div>
 </main>
 <!-- like claude.ai, the dialog is added to the page when opened and removed when closed -->
@@ -103,11 +129,19 @@ td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: lef
   const editor = document.getElementById('editor');
   // the app's own idea of the mode, written to <html> and every inner root, like React
   let state = 'light';
+  // like claude.ai's highlighter: colours written inline from the app's own mode
+  const highlight = () => {
+    const code = document.getElementById('code');
+    code.setAttribute('style', `color: ${state === 'dark' ? 'rgb(234, 236, 240)' : 'rgb(56, 58, 66)'}; background: transparent;`);
+    code.querySelector('.kw').setAttribute('style', `color: ${state === 'dark' ? 'rgb(198, 120, 221)' : 'rgb(166, 38, 164)'};`);
+  };
   const setMode = (m) => {
     state = m;
     document.documentElement.setAttribute('data-mode', m);
     for (const el of document.querySelectorAll('.cds-root')) el.setAttribute('data-mode', m);
+    highlight();
   };
+  highlight();
   editor.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' || e.shiftKey) return;
     e.preventDefault();
