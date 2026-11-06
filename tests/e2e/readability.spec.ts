@@ -102,6 +102,14 @@ for (const mode of ['light', 'dark'] as const) {
     const hint = (await page.locator('#footer .hint').boundingBox())!;
     await scrollTo(hint.y);
     await page.waitForTimeout(150);
+    expect(Math.abs((await page.locator('#marker').boundingBox())!.y - hint.y), 'the marker is under the hint').toBeLessThan(2);
+    // a message behind the banner over the composer is gone too
+    const banner = (await page.locator('#footer .banner').boundingBox())!;
+    await scrollTo(banner.y + 4);
+    await page.waitForTimeout(150);
+    expect(await magenta(page, { x: banner.x, y: banner.y, width: banner.width, height: banner.height })).toBeLessThan(0.002);
+    await scrollTo(hint.y);
+    await page.waitForTimeout(150);
     const footer = (await page.locator('#footer').boundingBox())!;
     expect(await magenta(page, { x: footer.x, y: footer.y - 10, width: footer.width, height: footer.height + 10 })).toBeLessThan(0.002);
     for (const strip of ['#footer', '#wing-left', '#wing-right']) {

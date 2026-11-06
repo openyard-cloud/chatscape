@@ -145,11 +145,17 @@
       return !!dock;
     }
 
-    // The messages fade out just above the composer, where the strips that hid them were.
-    // The mask is drawn in the messages' own box, which scrolls, so it is moved on scroll.
+    // The messages fade out just above the composer (or a banner over it, whichever is
+    // higher), where the strips that hid them were. The mask is drawn in the messages'
+    // own box, which scrolls, so it is moved on scroll.
     fade() {
       if (!this.dock?.isConnected) return;
-      const top = (this.card ?? this.dock).getBoundingClientRect().top;
+      let top = Infinity;
+      for (const el of [this.card ?? this.dock, ...this.dock.querySelectorAll(`[${GLASS}]`)]) {
+        const r = el.getBoundingClientRect();
+        if (r.height) top = Math.min(top, r.top);
+      }
+      if (top === Infinity) return;
       for (let el = this.dock.previousElementSibling; el; el = el.previousElementSibling) {
         const r = el.getBoundingClientRect();
         if (!r.height) continue;

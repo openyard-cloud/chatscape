@@ -39,6 +39,7 @@ header { position: relative; height: 48px; display: flex; align-items: center; p
 .scroll { position: relative; flex: 1; overflow-y: auto; overflow-x: hidden; }
 .col { min-height: 100%; display: flex; flex-direction: column; padding-top: 24px; }
 .msgs { flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 0 20px 24px; }
+.more { padding-bottom: 600px; } /* room to scroll the marker to mid-window, whatever the fonts */
 .more p { color: var(--text-000); }
 #marker { height: 40px; background: #ff00ff; border-radius: 6px; }
 pre { font: 14px/1.5 ui-monospace, Menlo, monospace; padding: 12px 16px; border-radius: 10px; background: transparent; border: 1px solid var(--line); white-space: pre-wrap; }
@@ -95,10 +96,11 @@ td, th { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: lef
         <pre id="code"><span class="kw">const</span> bag = ['jacket', 'scarf', 'camera', 'charger'];
 bag.forEach((item) =&gt; console.log(item));</pre>
         <p>Book the cable car early on Saturday: the first cars leave at 7:30 and the queue grows after nine. The flower gardens open at 7:00 and are quiet until the tour buses come.</p>
-        <div id="marker"></div>
         <p>For dinner on Friday, the lake side has small grill places that stay open late. On Saturday, try the artichoke tea at the market and buy some to bring home.</p>
         <p>If it rains, the cafés along Tran Hung Dao have covered terraces with a view of the valley, and the train station is worth an hour for its old carriages.</p>
         <p>On Sunday, leave before three to miss the traffic on the pass; there are fruit stands at the bottom where you can stop for a break.</p>
+        <p>Keep some cash for the market stalls; most of them do not take cards, and the ATMs near the lake run out on Saturday evenings.</p>
+        <div id="marker"></div>
       </div>
     </div>
     <div class="dock" id="dock">
