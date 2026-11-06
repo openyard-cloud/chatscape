@@ -7,9 +7,11 @@
 <meta charset="utf-8">
 <title>ChatGPT</title>
 <style>
-:root[data-mode="dark"] { --main: #212121; --side: #181818; --text: #ececec; --muted: #9b9b9b; --input: #303030; }
+/* signed out the mode is a class/attribute toggle; signed in (?signed=1) it is
+   html[data-theme="dark|light"], next to non-mode attributes like data-appearance-preset */
+:root[data-mode="dark"], :root[data-theme="dark"] { --main: #212121; --side: #181818; --text: #ececec; --muted: #9b9b9b; --input: #303030; }
 /* like chatgpt.com, light mode computes to oklch(), not rgb() */
-:root[data-mode="light"] { --main: oklch(0.991069 0 none); --side: #f9f9f9; --text: oklch(0.159066 0 none); --muted: #5d5d5d; --input: #ffffff; }
+:root[data-mode="light"], :root[data-theme="light"] { --main: oklch(0.991069 0 none); --side: #f9f9f9; --text: oklch(0.159066 0 none); --muted: #5d5d5d; --input: #ffffff; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body { background: var(--main); color: var(--text); font: 16px/1.6 system-ui, sans-serif; display: flex; overflow: hidden; }
@@ -70,8 +72,13 @@ dialog.auth .go { display: block; width: 100%; margin-top: 12px; padding: 14px; 
     document.body.append(d);
     d.showModal();
   };
-  const mode = new URLSearchParams(location.search).get('mode');
-  if (mode) document.documentElement.setAttribute('data-mode', mode);
+  const params = new URLSearchParams(location.search);
+  const mode = params.get('mode');
+  if (params.get('signed')) {
+    document.documentElement.removeAttribute('data-mode');
+    document.documentElement.setAttribute('data-theme', mode || 'dark');
+    document.documentElement.setAttribute('data-appearance-preset', 'codex');
+  } else if (mode) document.documentElement.setAttribute('data-mode', mode);
 </script>
 </body>
 </html>

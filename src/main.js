@@ -349,14 +349,17 @@
 
   // A light scene puts the page in light mode and a dark scene in dark mode, so the
   // scene is shown as it is, not darkened or turned inside out to keep text readable.
-  // claude.ai keeps its mode in html[data-mode]; ChatGPT in classes on <html> that
-  // switch CSS variables (--lightningcss-light/-dark, older builds: .dark/.light).
+  // claude.ai keeps its mode in html[data-mode]; ChatGPT in html[data-theme] when
+  // signed in, and in classes on <html> that switch CSS variables when signed out
+  // (--lightningcss-light/-dark, older builds: .dark/.light).
   // Nothing is saved to the site: turning Chatscape off puts back what was there.
   // If the person (or the site) changes the mode by hand, that choice wins until the
   // next scene is picked; the veil then keeps the text readable as before.
   const html = document.documentElement;
   const STYLE_KEYS = ['color-scheme', '--lightningcss-light', '--lightningcss-dark'];
-  let forced = null; // { dark, own, mode, classes, style }
+  const MODE_ATTRS = ['data-mode', 'data-theme'];
+  const isMode = (value) => value === 'dark' || value === 'light';
+  let forced = null; // { dark, own, attrs, classes, style }
 
   // claude.ai repeats data-mode="dark|light" on inner roots (the app frame, the
   // sidebar, popovers mounted later); each of those is switched too, and remembered so
@@ -380,7 +383,7 @@
 
   function writeMode(isDark) {
     const want = isDark ? 'dark' : 'light', other = isDark ? 'light' : 'dark';
-    if (html.hasAttribute('data-mode')) html.setAttribute('data-mode', want);
+    for (const name of MODE_ATTRS) if (isMode(html.getAttribute(name))) html.setAttribute(name, want);
     writeInner(document, want);
     if (html.classList.contains(other) || html.classList.contains(want)) {
       html.classList.remove(other);
@@ -402,7 +405,7 @@
     if (!forced) {
       forced = {
         own: CS.pageIsDark(),
-        mode: html.getAttribute('data-mode'),
+        attrs: MODE_ATTRS.map((name) => [name, html.getAttribute(name)]),
         classes: ['dark', 'light'].filter((c) => html.classList.contains(c)),
         style: STYLE_KEYS.map((k) => [k, html.style.getPropertyValue(k), html.style.getPropertyPriority(k)]),
       };
@@ -415,8 +418,10 @@
   // Put back the page's own mode, as it was before the first scene was matched.
   function restorePageMode() {
     if (!forced) return;
-    if (forced.mode === null) html.removeAttribute('data-mode');
-    else html.setAttribute('data-mode', forced.mode);
+    for (const [name, value] of forced.attrs) {
+      if (value === null) html.removeAttribute(name);
+      else html.setAttribute(name, value);
+    }
     if (forced.classes.length || html.classList.contains('dark') || html.classList.contains('light')) {
       html.classList.remove('dark', 'light');
       html.classList.add(...forced.classes);
@@ -476,7 +481,11 @@
     const want = forced.dark ? 'dark' : 'light';
     for (const r of records) {
       if (r.target !== html) continue;
-      if (r.attributeName === 'data-mode' && html.getAttribute('data-mode') !== want) return true;
+      if (MODE_ATTRS.includes(r.attributeName)) {
+        const value = html.getAttribute(r.attributeName);
+        if (isMode(value) && value !== want) return true;
+        continue;
+      }
       if (r.attributeName !== 'class' || r.oldValue === html.className) continue;
       if (html.classList.contains(forced.dark ? 'light' : 'dark')) return true;
       // ChatGPT's mode classes have generated names: lift our override for a moment

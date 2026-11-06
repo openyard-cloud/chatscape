@@ -25,6 +25,39 @@ for (const site of ['claude', 'chatgpt'] as const) {
   });
 }
 
+// Signed in, ChatGPT keeps its mode in html[data-theme] instead.
+test('chatgpt signed in: the scene sets html[data-theme], and Turn off puts it back', async ({ settle, context }) => {
+  await settle({ theme: 'sakura' });
+  const page = await context.newPage();
+  await page.goto('https://chatgpt.com/?mode=dark&signed=1');
+  await page.locator('#chatscape-canvas').waitFor({ state: 'attached' });
+  await expect(html(page)).toHaveAttribute('data-theme', 'light');
+  await expect(html(page)).toHaveAttribute('data-appearance-preset', 'codex'); // not a mode: left alone
+  await page.waitForTimeout(800);
+  await expect(page.locator('canvas[data-veil]')).toHaveAttribute('data-veil', /^plain/);
+  expect(await textContrast(page.locator('#answer-text'))).toBeGreaterThan(7);
+
+  await page.locator('body').click();
+  await page.keyboard.press('Alt+Shift+KeyT');
+  await picker(page).getByRole('option', { name: 'Aurora' }).click();
+  await expect(html(page)).toHaveAttribute('data-theme', 'dark');
+  await picker(page).getByRole('button', { name: 'Turn off' }).click();
+  await expect(html(page)).toHaveAttribute('data-theme', 'dark');
+  await expect(html(page)).not.toHaveAttribute('data-mode', /.*/);
+});
+
+test('chatgpt signed in: a mode the site sets by hand wins', async ({ settle, context }) => {
+  await settle({ theme: 'sakura' });
+  const page = await context.newPage();
+  await page.goto('https://chatgpt.com/?mode=dark&signed=1');
+  await page.locator('#chatscape-canvas').waitFor({ state: 'attached' });
+  await expect(html(page)).toHaveAttribute('data-theme', 'light');
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark')); // as Settings > Appearance does
+  await page.waitForTimeout(800);
+  await expect(html(page)).toHaveAttribute('data-theme', 'dark');
+  expect(await textContrast(page.locator('#answer-text'))).toBeGreaterThan(7);
+});
+
 test('the picker lists light scenes first, then dark ones', async ({ open }) => {
   const page = await open('claude');
   await send(page, '#editor', '/chatscape');
