@@ -1,5 +1,7 @@
 # Chatscape
 
+[![OpenYard code check](https://openyard.cloud/badge/chatscape.svg)](https://openyard.cloud/p/chatscape#check)
+
 Live ASCII and pixel wallpapers behind your [claude.ai](https://claude.ai) and [ChatGPT](https://chatgpt.com) chat. 20 animated scenes, picked in two clicks, no account, nothing leaves your browser.
 
 [Website and live demo](https://chatscape.openyard.cloud) · [Privacy policy](https://chatscape.openyard.cloud/privacy) · Part of [OpenYard](https://openyard.cloud)
