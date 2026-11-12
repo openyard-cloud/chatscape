@@ -105,6 +105,12 @@ kbd{font:600 12px ui-monospace,Menlo,monospace;padding:2px 6px;border-radius:6px
 .step h4{margin:0 0 6px;font-size:16px}
 .step p{margin:0;color:var(--muted);font-size:14.5px}
 .step code{font:13px ui-monospace,Menlo,monospace;background:var(--chip);padding:1px 6px;border-radius:6px}
+.browsers{display:inline-flex;gap:4px;padding:4px;border-radius:999px;margin:-12px 0 24px}
+.browsers button{font:600 14px Inter,sans-serif;color:var(--muted);background:transparent;border:0;border-radius:999px;padding:8px 16px;cursor:pointer;transition:background .2s,color .2s}
+.browsers button:hover{color:var(--ink)}
+.browsers button[aria-selected=true]{background:var(--ink);color:#0b1020}
+body.light .browsers button[aria-selected=true]{color:#fff}
+#install:not([data-browser=firefox]) .ff,#install[data-browser=firefox] .cr{display:none}
 
 footer{padding:40px 0 60px;font-size:14px;color:var(--muted)}
 footer .bar{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;align-items:center;padding:18px 22px;border-radius:20px}
@@ -134,7 +140,7 @@ footer a{color:var(--ink)}
         <span>Add to Chrome</span></a>
       <a class="btn sec glass" href="#themes">Try the scenes</a>
     </div>
-    <p class="note">Free and open source (MIT). Works in Chrome, Edge and Brave.</p>
+    <p class="note">Free and open source (MIT). Works in Chrome, Edge, Brave and Firefox.</p>
   </div>
   <div class="mock glass" aria-label="How claude.ai looks with Chatscape">
     <div class="side"><b>Claude</b><span>New chat</span><span class="on">Weekend plans</span><span>Product notes</span><span>Recipes</span></div>
@@ -167,20 +173,24 @@ footer a{color:var(--ink)}
       <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></div><h3>Dim and Glass</h3><p>Dim lays a veil in the page's own colour over the scene. Glass sets how see-through the sidebar and composer are. Text stays easy to read.</p></div>
       <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Private by design</h3><p>One permission (storage), runs only on claude.ai and chatgpt.com, no network requests, no analytics. It never reads your messages.</p></div>
       <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></div><h3>Light on your laptop</h3><p>Up to 30 frames per second, pauses when the tab is hidden, and a still frame when your system asks for reduced motion.</p></div>
-      <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></div><h3>Off means off</h3><p>Turn off restores the page exactly as it was. Your choice syncs across your Chrome profiles.</p></div>
+      <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></div><h3>Off means off</h3><p>Turn off restores the page exactly as it was. Your choice syncs across your signed-in browsers.</p></div>
       <div class="feat glass"><div class="ic"><svg viewBox="0 0 24 24"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></div><h3>Add your own scene</h3><p>A scene is a few lines of data: gradients, stars, waves, sprites. No drawing code. Send a pull request and it ships to everyone.</p></div>
     </div>
   </div>
 </section>
 
-<section id="install" style="padding-top:20px">
+<section id="install" data-browser="chrome" style="padding-top:20px">
   <div class="wrap">
     <h2 class="sec-h">Install in a minute.</h2>
-    <p class="sec-p" id="install-note">The Chrome Web Store listing is on its way. Until then, install it by hand:</p>
+    <p class="sec-p" id="install-note"><span class="cr">The Chrome Web Store listing is on its way. Until then, install it by hand:</span><span class="ff">Firefox loads it as a temporary add-on for now. It is removed when Firefox quits, so after a restart, do step 3 again.</span></p>
+    <div class="browsers glass" role="tablist" aria-label="Browser">
+      <button type="button" role="tab" data-browser="chrome" aria-selected="true">Chrome, Edge, Brave</button>
+      <button type="button" role="tab" data-browser="firefox" aria-selected="false">Firefox</button>
+    </div>
     <div class="steps">
       <div class="step glass"><h4>Download</h4><p><a class="btn pri sm" id="dl" href="/download/chatscape.zip" style="margin-top:6px">Download .zip</a></p><p class="ver" id="dl-file" hidden></p></div>
       <div class="step glass"><h4>Unzip it</h4><p>Double-click the file. You get a folder named <code>chatscape</code>.</p></div>
-      <div class="step glass"><h4>Load it</h4><p>Open <code>chrome://extensions</code>, turn on <b>Developer mode</b>, click <b>Load unpacked</b> and pick the folder.</p></div>
+      <div class="step glass"><h4>Load it</h4><p class="cr">Open <code>chrome://extensions</code>, turn on <b>Developer mode</b>, click <b>Load unpacked</b> and pick the folder.</p><p class="ff">Open <code>about:debugging</code>, click <b>This Firefox</b>, then <b>Load Temporary Add-on…</b> and pick <code>manifest.json</code> inside the folder.</p></div>
       <div class="step glass"><h4>Open Claude or ChatGPT</h4><p>Reload claude.ai or chatgpt.com. Cloud Drift appears behind your chat. Press <kbd class="alt">Alt</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> to change it.</p></div>
     </div>
   </div>
@@ -207,10 +217,21 @@ footer a{color:var(--ink)}
     f.innerHTML = `<code>chatscape-${v.version}.zip</code>`;
     f.hidden = false;
   }).catch(() => {});
+  // Install steps for Chrome (and Edge, Brave) or Firefox; Firefox visitors see theirs first.
+  const install = document.getElementById("install");
+  const tabs = install.querySelectorAll("[role=tab]");
+  const showSteps = b => { install.dataset.browser = b; tabs.forEach(t => t.setAttribute("aria-selected", t.dataset.browser === b)); };
+  tabs.forEach(t => t.addEventListener("click", () => showSteps(t.dataset.browser)));
+  const firefox = /Firefox\//.test(navigator.userAgent);
+  if (firefox) {
+    showSteps("firefox");
+    document.querySelectorAll("[data-add] span, #nav-add").forEach(el => el.textContent = "Add to Firefox");
+    document.querySelectorAll("[data-add] svg").forEach(el => el.remove());
+  }
   const STORE_URL = "";
-  if (STORE_URL) {
+  if (STORE_URL && !firefox) {
     document.querySelectorAll("[data-add], #nav-add").forEach(a => { a.href = STORE_URL; a.target = "_blank"; a.rel = "noopener"; });
-    document.getElementById("install-note").textContent = "Get it from the Chrome Web Store, or install it by hand:";
+    document.querySelector("#install-note .cr").textContent = "Get it from the Chrome Web Store, or install it by hand:";
   }
 
   const CS = window.Chatscape, THEMES = CS.THEMES;
