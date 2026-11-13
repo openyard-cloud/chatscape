@@ -8,7 +8,7 @@
   "background": { "service_worker": "background.js", "scripts": ["background.js"] },
   "browser_specific_settings": {
     "gecko": {
-      "id": "chatscape@thienvo",
+      "id": "chatscape@openyard.cloud",
       "strict_min_version": "121.0",
       "data_collection_permissions": { "required": ["none"] }
     }
