@@ -1,0 +1,26 @@
+name: vetcode
+# Every pull request is reviewed by vetcode for malware, supply-chain attacks, leaked secrets and
+# vulnerabilities, with inline comments on the changed lines. It runs vetcode from its main branch,
+# so each pull request is checked by the newest version without bumping anything here.
+on:
+  pull_request:
+permissions:
+  contents: read
+  pull-requests: write
+concurrency:
+  group: vetcode-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: openyard-cloud/vetcode@main
+        with:
+          fail-on: high
